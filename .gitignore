@@ -4,3 +4,9 @@
 /thunderstore/build
 obj
 bin
+
+Art/**/*.*~
+Assets*
+*.manifest
+libs-stripped/
+thunderstore/build/

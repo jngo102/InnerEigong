@@ -1,5 +1,4 @@
-name: build
-
+name: Build and Release
 on:
   push:
     branches: [ "main" ]
@@ -7,28 +6,89 @@ on:
       - 'v*'
   pull_request:
     branches: [ "main" ]
-  workflow_dispatch: 
+  workflow_dispatch:
 
 jobs:
-  build:
-    permissions: 
-      contents: write
+  setup_release:
+    name: Setup release
     runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      mod_name: ${{ steps.get_mod_name.outputs.mod_name }}
+      mod_version: ${{ steps.get_version.outputs.version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get C# project file
+        id: get_project_file
+        run: echo "csproj=$(find . -iname *.csproj | head -1)" >> $GITHUB_OUTPUT
+
+      - name: Get mod name
+        id: get_mod_name
+        run: |
+          tag=AssemblyName
+          mod_name=$(grep --only-matching --perl-regexp "<$tag>\K.*(?=</$tag>)" ${{ steps.get_project_file.outputs.csproj }})
+          echo "mod_name=$mod_name" >> $GITHUB_OUTPUT 
+
+      - name: Get assembly version
+        id: get_version
+        run: |
+          tag=Version
+          version=$(grep --only-matching --perl-regexp "<$tag>\K.*(?=</$tag>)" ${{ steps.get_project_file.outputs.csproj }})
+          echo "version=$version" >> $GITHUB_OUTPUT
+
+      - name: Get recent Change Log
+        id: get_changelog
+        run: |
+          query_regex="^## \[[0-9]*\.[0-9]*\.[0-9]*\] - [0-9]{4}-[0-9]{2}-[0-9]{2}$"
+          cmd_output=$(grep --only-matching --perl-regexp "$query_regex" ChangeLog.md)
+          echo "$(echo "$cmd_output" | head -2)" > temp.txt
+          start=$(cat temp.txt | head -1 | sed --expression 's/[]\/$*.^[]/\\&/g')
+          end=$(cat temp.txt | tail -1 | sed --expression 's/[]\/$*.^[]/\\&/g')
+          body=$(awk "/$start/,/$end/ { print }" ChangeLog.md | head -n -1)
+          echo 'body<<EOF' >> $GITHUB_OUTPUT
+          echo "$body" >> $GITHUB_OUTPUT
+          echo 'EOF' >> $GITHUB_OUTPUT
+
+      - name: Create release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.get_version.outputs.version }}
+          release_name: Release v${{ steps.get_version.outputs.version }}
+          body: ${{ steps.get_changelog.outputs.body }}
+          draft: false
+          prerelease: false
+  build_and_publish:
+    name: Build and Publish
+    needs: setup_release
+    permissions:
+      contents: write
+    strategy:
+      matrix:
+        target: [
+          { runner: macos-latest, suffix: macOS },
+          { runner: windows-latest, suffix: Windows },
+        ]
+    runs-on: ${{ matrix.target.runner }}
     steps:
       - uses: actions/checkout@v4
       - name: Download libs-stripped
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: nine-sols-modding/libs-stripped
           path: libs-stripped
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 8.0.x
-      - name: Restore dependencies
-        run: dotnet restore
+          dotnet-version: 9
       - name: Install tcli
         run: dotnet tool install -g tcli
+      - name: Restore dependencies
+        run: dotnet restore
       - name: Check against all game versions
         run: |
           cut -f1 -d' ' libs-stripped/versions.txt | while IFS= read -r version; do
@@ -46,10 +106,29 @@ jobs:
           path: |
             thunderstore/build/*.zip
             thunderstore/build/dll/*.dll
-      - name: Release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
+      - name: Get publish zip
+        id: get_zip
+        run: |
+          echo "file_path=$(find . -iname *.zip | head -1)" >> $GITHUB_OUTPUT
+      - name: Upload zip release asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          files: |
-            thunderstore/build/*.zip
-            thunderstore/build/dll/*.dll
+          upload_url: ${{ needs.setup_release.outputs.upload_url }}
+          asset_path: ${{ steps.get_zip.outputs.file_path }}
+          asset_name: ${{ needs.setup_release.outputs.mod_name }}_${{ needs.setup_release.outputs.version }}_${{ matrix.target.suffix }}.zip
+          asset_content_type: application/zip
+      - name: Get publish DLL
+        id: get_dll
+        run: |
+          echo "file_path=$(find ./thunderstore/build/dll/*.dll -iname *.dll | head -1)" >> $GITHUB_OUTPUT
+      - name: Upload DLL release asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.setup_release.outputs.upload_url }}
+          asset_path: ${{ steps.get_dll.outputs.file_path }}
+          asset_name: ${{ needs.setup_release.outputs.mod_name }}_${{ needs.setup_release.outputs.version }}_${{ matrix.target.suffix }}.dll
+          asset_content_type: application/zip
