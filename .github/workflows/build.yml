@@ -86,15 +86,24 @@ jobs:
         with:
           dotnet-version: 9
       - name: Install tcli
-        run: dotnet tool install -g tcli
-      - name: Restore dependencies
+        run: dotnet tool  -g tcli
+      - name: Restore depeninstalldencies
         run: dotnet restore
-      - name: Check against all game versions
+      - name: Check against all game versions (macOS)
+        if: ${{ matrix.target.runner == 'macos-latest' }}
         run: |
           cut -f1 -d' ' libs-stripped/versions.txt | while IFS= read -r version; do
             echo "Checking $version"
             dotnet build --no-restore -p:DllPath="$PWD/libs-stripped/$version"
           done
+      - name: Check against all game versions (Windows)
+        if: ${{ matrix.target.runner == 'windows-latest' }}
+        run: |
+          Get-Content "libs-stripped\versions.txt" | ForEach-Object {
+              $version = $_.Split(' ')[0]
+              Write-Host "Checking $version"
+              dotnet build --no-restore -p:DllPath="$PWD\libs-stripped\$version"
+          }
       - name: Publish build
         run: |
           publish_version=$(cut -f1 -d' ' libs-stripped/versions.txt | tail -n1)
