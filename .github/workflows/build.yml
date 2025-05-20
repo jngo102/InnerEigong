@@ -136,21 +136,32 @@ jobs:
           asset_content_type: application/zip
       - name: Get publish DLL (macOS)
         if: ${{ matrix.target.runner == 'macos-latest' }}
-        id: get_dll
+        id: get_macos_dll
         run: |
           echo "file_path=$(find ./thunderstore/build/dll/*.dll -iname *.dll | head -1)" >> $GITHUB_OUTPUT
       - name: Get publish DLL (Windows)
         if: ${{ matrix.target.runner == 'windows-latest' }}
-        id: get_dll
+        id: get_windows_dll
         run: |
           $dllFile = Get-ChildItem -Path "./thunderstore/build/dll/*.dll" -Include "*.dll" | Select-Object -First 1
            echo "file_path=$($dllFile.FullName)" >> $GITHUB_OUTPUT
-      - name: Upload DLL release asset
+      - name: Upload DLL release asset (macOS)
+        if: ${{ matrix.target.runner == 'macos-latest' }}
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.setup_release.outputs.upload_url }}
-          asset_path: ${{ steps.get_dll.outputs.file_path }}
+          asset_path: ${{ steps.get_macos_dll.outputs.file_path }}
+          asset_name: ${{ needs.setup_release.outputs.mod_name }}_${{ needs.setup_release.outputs.mod_version }}_${{ matrix.target.suffix }}.dll
+          asset_content_type: application/x-msdownload
+      - name: Upload DLL release asset (Windows)
+        if: ${{ matrix.target.runner == 'windows-latest' }}
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.setup_release.outputs.upload_url }}
+          asset_path: ${{ steps.get_windows_dll.outputs.file_path }}
           asset_name: ${{ needs.setup_release.outputs.mod_name }}_${{ needs.setup_release.outputs.mod_version }}_${{ matrix.target.suffix }}.dll
           asset_content_type: application/x-msdownload
