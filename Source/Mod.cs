@@ -13,7 +13,7 @@ public class Mod : BaseUnityPlugin {
 
     private void Awake() {
         Log.Init(Logger);
-        
+
         _harmony = new Harmony(MyPluginInfo.PLUGIN_GUID);
         _harmony.PatchAll(typeof(Patches));
 
@@ -51,6 +51,8 @@ public class Mod : BaseUnityPlugin {
 
     private void OnDestroy() {
         AssetManager.Unload();
+        PhantomManager.Unload();
+        PreloadManager.Unload();
         _harmony.UnpatchSelf();
     }
 

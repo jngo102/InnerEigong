@@ -6,9 +6,9 @@ namespace InnerEigong;
 /// Overlays a texture over a specific color.
 /// </summary>
 [RequireComponent(typeof(SpriteRenderer))]
-public class ColorKeyOverlayer : MonoBehaviour {
+internal class ColorKeyOverlayer : MonoBehaviour {
     private SpriteRenderer _spriteRenderer;
-    
+
     private static readonly int OverlayScaleID = Shader.PropertyToID("_OverlayScale");
     private static readonly int ToleranceID = Shader.PropertyToID("_Tolerance");
     private static readonly int SmoothingID = Shader.PropertyToID("_Smoothing");

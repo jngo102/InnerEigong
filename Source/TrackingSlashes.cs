@@ -17,7 +17,7 @@ internal class TrackingSlashes : MonoBehaviour {
             var damageScalar = slashObj.AddComponent<DamageScalarSource>();
             var parriableOwner = slashObj.AddComponent<GeneralParriableOwner>();
             var slashPoolObjComp = slashObj.AddComponent<PoolObject>();
-            
+
             var animator = GetComponent<Animator>();
             var clip = animator.runtimeAnimatorController.animationClips[0];
             var animEvent = clip.events[0];
@@ -51,7 +51,7 @@ internal class TrackingSlashes : MonoBehaviour {
             damageDealer.bindingParry = parriableEffect;
             damageDealer.type = DamageType.MonsterAttack;
             parriableEffect.bindDamage = damageDealer;
-            
+
             var triggerDetector = dmgAreaObj.AddComponent<TriggerDetector>();
             triggerDetector.Invoke("Awake", 0);
 
@@ -76,6 +76,6 @@ internal class TrackingSlashes : MonoBehaviour {
     }
 
     private void DestroySelf() {
-        // Destroy(gameObject);
+        Destroy(gameObject);
     }
 }

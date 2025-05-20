@@ -1,6 +1,12 @@
 # Inner Eigong Change Log
 
-## [0.5.0] -2025-05-20
+## [0.6.0] - 2025-05-20
+
+### Changed
+
+- Minor code cleanup, docstring additions, and member visibility changes.
+
+## [0.5.0] - 2025-05-20
 
 ### Removed
 
