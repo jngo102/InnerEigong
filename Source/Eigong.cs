@@ -10,12 +10,13 @@ namespace InnerEigong;
 /// <summary>
 /// Modifies the behavior of the Eigong boss.
 /// </summary>
+[RequireComponent(typeof(StealthGameMonster))]
 internal class Eigong : MonoBehaviour {
+    [Auto(false)]
     private StealthGameMonster _monster = null!;
     private RuntimeAnimatorController _newController = null!;
 
     private void Awake() {
-        TryGetComponent(out _monster);
         _monster.OverrideWanderingIdleTime(0);
         _monster.StartingPhaseIndex = 1;
 
@@ -33,6 +34,8 @@ internal class Eigong : MonoBehaviour {
     }
 
     private const string GunStateAnimation = "Gun Prepare";
+
+    private OldPivotRotate _armRotate = null!;
     private LaserAttackController _laserAttack = null!;
 
     private void SetupGunAttack() {
@@ -129,8 +132,6 @@ internal class Eigong : MonoBehaviour {
             }
         }
     }
-
-    private OldPivotRotate _armRotate = null!;
 
     private void StopArmFollow() {
         _armRotate.KeepLookAtPlayer = false;

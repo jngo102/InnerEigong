@@ -7,6 +7,7 @@ namespace InnerEigong;
 /// </summary>
 [RequireComponent(typeof(SpriteRenderer))]
 internal class ColorKeyOverlayer : MonoBehaviour {
+    [Auto(false)]
     private SpriteRenderer _spriteRenderer;
 
     private static readonly int OverlayScaleID = Shader.PropertyToID("_OverlayScale");
@@ -38,7 +39,6 @@ internal class ColorKeyOverlayer : MonoBehaviour {
     }
 
     private void Awake() {
-        TryGetComponent(out _spriteRenderer);
         if (AssetManager.TryGet<Material>("_2dxFX_ColorKeyOverlay", out var colorKeyOverlayMaterial)) {
             _spriteRenderer.material = colorKeyOverlayMaterial;
         }
