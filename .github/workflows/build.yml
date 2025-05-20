@@ -104,14 +104,20 @@ jobs:
               Write-Host "Checking $version"
               dotnet build --no-restore -p:DllPath="$PWD\libs-stripped\$version"
           }
-      - name: Publish build
+      - name: Publish build (macOS)
+        if: ${{ matrix.target.runner == 'macos-latest' }}
         run: |
           publish_version=$(cut -f1 -d' ' libs-stripped/versions.txt | tail -n1)
+          dotnet publish --no-restore -p:DllPath="$PWD/libs-stripped/$publish_version"
+      - name: Publish build (Windows)
+        if: ${{ matrix.target.runner == 'windows-latest' }}
+        run: |
+          $publish_version = (Get-Content "libs-stripped/versions.txt" | Select-Object -Last 1).Split()[0]
           dotnet publish --no-restore -p:DllPath="$PWD/libs-stripped/$publish_version"
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: build
+          name: Build_${{ matrix.target.suffix }}
           path: |
             thunderstore/build/*.zip
             thunderstore/build/dll/*.dll
@@ -128,10 +134,17 @@ jobs:
           asset_path: ${{ steps.get_zip.outputs.file_path }}
           asset_name: ${{ needs.setup_release.outputs.mod_name }}_${{ needs.setup_release.outputs.mod_version }}_${{ matrix.target.suffix }}.zip
           asset_content_type: application/zip
-      - name: Get publish DLL
+      - name: Get publish DLL (macOS)
+        if: ${{ matrix.target.runner == 'macos-latest' }}
         id: get_dll
         run: |
           echo "file_path=$(find ./thunderstore/build/dll/*.dll -iname *.dll | head -1)" >> $GITHUB_OUTPUT
+      - name: Get publish DLL (Windows)
+        if: ${{ matrix.target.runner == 'windows-latest' }}
+        id: get_dll
+        run: |
+          $dllFile = Get-ChildItem -Path "./thunderstore/build/dll/*.dll" -Include "*.dll" | Select-Object -First 1
+           echo "file_path=$($dllFile.FullName)" >> $GITHUB_OUTPUT
       - name: Upload DLL release asset
         uses: actions/upload-release-asset@v1
         env:
@@ -140,4 +153,4 @@ jobs:
           upload_url: ${{ needs.setup_release.outputs.upload_url }}
           asset_path: ${{ steps.get_dll.outputs.file_path }}
           asset_name: ${{ needs.setup_release.outputs.mod_name }}_${{ needs.setup_release.outputs.mod_version }}_${{ matrix.target.suffix }}.dll
-          asset_content_type: application/zip
+          asset_content_type: application/x-msdownload
