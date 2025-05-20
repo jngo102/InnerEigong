@@ -169,7 +169,7 @@ jobs:
         id: get_zip
         run: |
           $zipFile = Get-ChildItem -Path "./thunderstore/build/*.zip" -Include "*.zip" | Select-Object -First 1
-           echo "file_path=$($$zipFile.FullName)" >> $GITHUB_OUTPUT
+           echo "file_path=$($zipFile.FullName)" >> $GITHUB_OUTPUT
       - name: Upload zip release asset
         uses: actions/upload-release-asset@v1
         env:
