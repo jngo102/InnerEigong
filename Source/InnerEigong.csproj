@@ -2,6 +2,7 @@
     <PropertyGroup>
         <Description>Mods the true final boss to be more difficult.</Description>
         <TargetFramework>netstandard2.1</TargetFramework>
+        <AssemblyName>InnerEigong</AssemblyName>
         <Version>0.4.0</Version>
         <LangVersion>latest</LangVersion>
         <Nullable>enable</Nullable>
