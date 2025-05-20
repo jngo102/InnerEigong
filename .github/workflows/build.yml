@@ -62,18 +62,12 @@ jobs:
           body: ${{ steps.get_changelog.outputs.body }}
           draft: false
           prerelease: false
-  build_and_publish:
-    name: Build and Publish
+  build_and_publish_macos:
+    name: Build and Publish (macOS)
     needs: setup_release
     permissions:
       contents: write
-    strategy:
-      matrix:
-        target: [
-          { runner: macos-latest, suffix: macOS },
-          { runner: windows-latest, suffix: Windows },
-        ]
-    runs-on: ${{ matrix.target.runner }}
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
       - name: Download libs-stripped
@@ -89,35 +83,20 @@ jobs:
         run: dotnet tool install -g tcli
       - name: Restore dependencies
         run: dotnet restore
-      - name: Check against all game versions (macOS)
-        if: ${{ matrix.target.runner == 'macos-latest' }}
+      - name: Check against all game versions
         run: |
           cut -f1 -d' ' libs-stripped/versions.txt | while IFS= read -r version; do
             echo "Checking $version"
             dotnet build --no-restore -p:DllPath="$PWD/libs-stripped/$version"
           done
-      - name: Check against all game versions (Windows)
-        if: ${{ matrix.target.runner == 'windows-latest' }}
-        run: |
-          Get-Content "libs-stripped\versions.txt" | ForEach-Object {
-              $version = $_.Split(' ')[0]
-              Write-Host "Checking $version"
-              dotnet build --no-restore -p:DllPath="$PWD\libs-stripped\$version"
-          }
-      - name: Publish build (macOS)
-        if: ${{ matrix.target.runner == 'macos-latest' }}
+      - name: Publish build
         run: |
           publish_version=$(cut -f1 -d' ' libs-stripped/versions.txt | tail -n1)
-          dotnet publish --no-restore -p:DllPath="$PWD/libs-stripped/$publish_version"
-      - name: Publish build (Windows)
-        if: ${{ matrix.target.runner == 'windows-latest' }}
-        run: |
-          $publish_version = (Get-Content "libs-stripped/versions.txt" | Select-Object -Last 1).Split()[0]
           dotnet publish --no-restore -p:DllPath="$PWD/libs-stripped/$publish_version"
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Build_${{ matrix.target.suffix }}
+          name: build_macos
           path: |
             thunderstore/build/*.zip
             thunderstore/build/dll/*.dll
@@ -132,36 +111,85 @@ jobs:
         with:
           upload_url: ${{ needs.setup_release.outputs.upload_url }}
           asset_path: ${{ steps.get_zip.outputs.file_path }}
-          asset_name: ${{ needs.setup_release.outputs.mod_name }}_${{ needs.setup_release.outputs.mod_version }}_${{ matrix.target.suffix }}.zip
+          asset_name: ${{ needs.setup_release.outputs.mod_name }}_${{ needs.setup_release.outputs.mod_version }}_macOS.zip
           asset_content_type: application/zip
-      - name: Get publish DLL (macOS)
-        if: ${{ matrix.target.runner == 'macos-latest' }}
-        id: get_macos_dll
+      - name: Get publish DLL
+        id: get_dll
         run: |
           echo "file_path=$(find ./thunderstore/build/dll/*.dll -iname *.dll | head -1)" >> $GITHUB_OUTPUT
-      - name: Get publish DLL (Windows)
-        if: ${{ matrix.target.runner == 'windows-latest' }}
-        id: get_windows_dll
+      - name: Upload DLL release asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.setup_release.outputs.upload_url }}
+          asset_path: ${{ steps.get_dll.outputs.file_path }}
+          asset_name: ${{ needs.setup_release.outputs.mod_name }}_${{ needs.setup_release.outputs.mod_version }}_macOS.dll
+          asset_content_type: application/x-msdownload
+  build_and_publish_windows:
+    name: Build and Publish (Windows)
+    needs: setup_release
+    permissions:
+      contents: write
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download libs-stripped
+        uses: actions/checkout@v4
+        with:
+          repository: nine-sols-modding/libs-stripped
+          path: libs-stripped
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9
+      - name: Install tcli
+        run: dotnet tool install -g tcli
+      - name: Restore dependencies
+        run: dotnet restore
+      - name: Check against all game versions
+        run: |
+          Get-Content "libs-stripped\versions.txt" | ForEach-Object {
+              $version = $_.Split(' ')[0]
+              Write-Host "Checking $version"
+              dotnet build --no-restore -p:DllPath="$PWD\libs-stripped\$version"
+          }
+      - name: Publish build
+        run: |
+          $publish_version = (Get-Content "libs-stripped/versions.txt" | Select-Object -Last 1).Split()[0]
+          dotnet publish --no-restore -p:DllPath="$PWD/libs-stripped/$publish_version"
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build_windows
+          path: |
+            thunderstore/build/*.zip
+            thunderstore/build/dll/*.dll
+      - name: Get publish zip
+        id: get_zip
+        run: |
+          $zipFile = Get-ChildItem -Path "./thunderstore/build/*.zip" -Include "*.zip" | Select-Object -First 1
+           echo "file_path=$($$zipFile.FullName)" >> $GITHUB_OUTPUT
+      - name: Upload zip release asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.setup_release.outputs.upload_url }}
+          asset_path: ${{ steps.get_zip.outputs.file_path }}
+          asset_name: ${{ needs.setup_release.outputs.mod_name }}_${{ needs.setup_release.outputs.mod_version }}_Windows.zip
+          asset_content_type: application/zip
+      - name: Get publish DLL
+        id: get_dll
         run: |
           $dllFile = Get-ChildItem -Path "./thunderstore/build/dll/*.dll" -Include "*.dll" | Select-Object -First 1
            echo "file_path=$($dllFile.FullName)" >> $GITHUB_OUTPUT
-      - name: Upload DLL release asset (macOS)
-        if: ${{ matrix.target.runner == 'macos-latest' }}
+      - name: Upload DLL release asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.setup_release.outputs.upload_url }}
-          asset_path: ${{ steps.get_macos_dll.outputs.file_path }}
-          asset_name: ${{ needs.setup_release.outputs.mod_name }}_${{ needs.setup_release.outputs.mod_version }}_${{ matrix.target.suffix }}.dll
-          asset_content_type: application/x-msdownload
-      - name: Upload DLL release asset (Windows)
-        if: ${{ matrix.target.runner == 'windows-latest' }}
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.setup_release.outputs.upload_url }}
-          asset_path: ${{ steps.get_windows_dll.outputs.file_path }}
-          asset_name: ${{ needs.setup_release.outputs.mod_name }}_${{ needs.setup_release.outputs.mod_version }}_${{ matrix.target.suffix }}.dll
+          asset_path: ${{ steps.get_dll.outputs.file_path }}
+          asset_name: ${{ needs.setup_release.outputs.mod_name }}_${{ needs.setup_release.outputs.mod_version }}_Windows.dll
           asset_content_type: application/x-msdownload
