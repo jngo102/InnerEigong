@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
-using NineSolsAPI.Utils;
 using UnityEngine;
 using UObj = UnityEngine.Object;
 
@@ -23,9 +21,8 @@ internal static class PhantomManager {
     internal static void Initialize(GameObject refObj, int numPhantoms = 1) {
         _phantoms = new List<Phantom>(numPhantoms);
         for (var i = 0; i < numPhantoms; i++) {
-            var phantomObj = ObjectUtils.InstantiateInit(refObj);
+            var phantomObj = UObj.Instantiate(refObj, refObj.transform.position, Quaternion.identity);
             phantomObj.SetActive(false);
-            phantomObj.transform.position = refObj.transform.position;
             var phantom = phantomObj.AddComponent<Phantom>();
             phantom.ScrambleGuid(i);
             phantomObj.SetActive(true);

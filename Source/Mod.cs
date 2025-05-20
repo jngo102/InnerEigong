@@ -1,39 +1,18 @@
 ﻿using BepInEx;
 using Cysharp.Threading.Tasks;
 using HarmonyLib;
-using NineSolsAPI;
-using NineSolsAPI.Preload;
 using RCGFSM.Animation;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 namespace InnerEigong;
 
-[BepInDependency(NineSolsAPICore.PluginGUID)]
 [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
 public class Mod : BaseUnityPlugin {
-    internal static Mod Instance { get; private set; }
-
-    private const string SniperScene = "A5_S4_CastleMid_Remake_5wei";
-    private const string SniperLaserPath = "A5_S4/Room/SniperTeleportGroup (1)/StealthGameMonster_Sniper (1)/MonsterCore/Animator(Proxy)/Animator";
-
     private static Harmony _harmony = null!;
-
-    [Preload(scene: SniperScene, path: SniperLaserPath)]
-    internal GameObject? sniperPrefab;
-
-    internal GameObject SniperCore => sniperPrefab.transform.Find("Dragon_Sniper/DragonSniper/RotateRArm/RArm/Bow/SniperLaserCore").gameObject;
-
-    internal GameObject SniperAudio => sniperPrefab.transform.Find("LogicRoot/Audio/EnemySFX_Sniper_Attack").gameObject;
 
     private void Awake() {
         Log.Init(Logger);
-        
-        Instance = this;
-        
-        RCGLifeCycle.DontDestroyForever(gameObject);
-
-        NineSolsAPICore.Preloader.AddPreloadClass(this);
         
         _harmony = new Harmony(MyPluginInfo.PLUGIN_GUID);
         _harmony.PatchAll(typeof(Patches));
@@ -44,9 +23,9 @@ public class Mod : BaseUnityPlugin {
 
     private async void Start() {
         await InitializeAssets();
+        await PreloadManager.Initialize();
 #if DEBUG
-        // await StartEigongFight();
-        // Log.Info("Started Eigong fight");
+        await StartEigongFight();
 #endif
     }
 

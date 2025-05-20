@@ -17,11 +17,11 @@ internal class Phantom : MonoBehaviour {
     private MonsterBase _monster;
     
     private void Start() {
-        // AutoAttributeManager.AutoReferenceAllChildren(gameObject);
+        AutoAttributeManager.AutoReferenceAllChildren(gameObject);
 
         TryGetComponent(out _monster);
-        // _monster.EnterLevelAwake();
-        // _monster.EnterLevelReset();
+        _monster.EnterLevelAwake();
+        _monster.EnterLevelReset();
 
         foreach (var rend in GetComponentsInChildren<SpriteRenderer>()) {
             if (rend.name.Contains("Shadow")) continue;

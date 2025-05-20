@@ -1,5 +1,11 @@
 # Inner Eigong Change Log
 
+## [0.5.0] -2025-05-20
+
+### Removed
+
+- Removed dependency on NineSolsAPI
+
 ## [0.4.0] - 2025-05-19
 
 ### Added

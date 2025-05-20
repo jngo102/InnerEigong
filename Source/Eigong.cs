@@ -1,12 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Reflection;
 using Cysharp.Threading.Tasks;
 using HarmonyLib;
 using MonsterLove.StateMachine;
-using NineSolsAPI.Preload;
 using UnityEngine;
-using UnityEngine.Animations;
 using States = MonsterBase.States;
 
 namespace InnerEigong;
@@ -30,12 +26,12 @@ internal class Eigong : MonoBehaviour {
         SetupGunAttack();
 
         ResetMonster();
-        
+
         Log.Debug("DONE AWAKE");
     }
 
     private StateMachine<States> _stateMachine = null!;
-    
+
     private async void Start() {
         await UniTask.WaitUntil(() => _monster.fsm != null);
 
@@ -98,6 +94,7 @@ internal class Eigong : MonoBehaviour {
 
     private const string GunStateAnimation = "Gun Prepare";
     private LaserAttackController _laserAttack = null!;
+
     private void SetupGunAttack() {
         var body = _monster.monsterCore.transform.Find("Animator(Proxy)/Animator/View/YiGung/Body");
         var arm = AssetManager.Inst<GameObject>("Arm", body);
@@ -116,84 +113,89 @@ internal class Eigong : MonoBehaviour {
         _armRotate.maxRotate = 360;
         _armRotate.offset = 0;
         _armRotate.referenceActor = _monster;
-        var sniper = Instantiate(Mod.Instance.SniperCore, arm.transform);
-        sniper.name = sniper.name.Replace("(Clone)", "");
-        sniper.transform.localPosition = new Vector2(-38, 5.3f);
-        sniper.transform.localScale = new Vector3(-1, 1, 1);
-        foreach (var renderer in sniper.GetComponentsInChildren<Renderer>(true)) {
-            renderer.sortingLayerName = "Monster";
-            renderer.sortingOrder = armRenderer.sortingOrder - 100;
-        }
-        var parriableOwner = sniper.AddComponent<GeneralParriableOwner>();
-        _laserAttack = sniper.GetComponentInChildren<LaserAttackController>(true);
-        var parriable = _laserAttack.gameObject.AddComponent<ParriableAttackEffect>();
-        parriable.param = new ParryParam {
-            knockBackType = KnockBackType.Large,
-            knockBackValue = 500,
-            LiftYForce = 100,
-            hurtLiftType = HurtType.HurtLarge
-        };
-        _laserAttack.gameObject.SetActive(true);
-        var laserDamager = _laserAttack.GetComponentInChildren<DamageDealer>(true);
-        laserDamager.damageAmount = 100;
-        laserDamager.attacker = GetComponentInChildren<Health>();
-        laserDamager.bindingParry = parriable;
-        parriable.bindDamage = laserDamager;
-        var laserDetector = _laserAttack.GetComponentInChildren<TriggerDetector>(true);
-        laserDetector.Invoke("Awake", 0);
-        sniper.SetActive(true);
-        var laserEffector = _laserAttack.GetComponentInChildren<EffectDealer>();
-        var laserView = sniper.GetComponentInChildren<LaserViewController>(true);
-        laserView.gameObject.SetActive(true);
-        arm.SetActive(false);
+        if (PreloadManager.TryGet("Sniper", out var sniperRef)) {
+            var sniperCoreRef = sniperRef.transform.Find("Dragon_Sniper/DragonSniper/RotateRArm/RArm/Bow/SniperLaserCore").gameObject;
+            var sniperCore = Instantiate(sniperCoreRef, arm.transform);
+            sniperCore.name = sniperCore.name.Replace("(Clone)", "");
+            sniperCore.transform.localPosition = new Vector2(-38, 5.3f);
+            sniperCore.transform.localScale = new Vector3(-1, 1, 1);
+            foreach (var renderer in sniperCore.GetComponentsInChildren<Renderer>(true)) {
+                renderer.sortingLayerName = "Monster";
+                renderer.sortingOrder = armRenderer.sortingOrder - 100;
+            }
+            var parriableOwner = sniperCore.AddComponent<GeneralParriableOwner>();
+            _laserAttack = sniperCore.GetComponentInChildren<LaserAttackController>(true);
+            var parriable = _laserAttack.gameObject.AddComponent<ParriableAttackEffect>();
+            parriable.param = new ParryParam {
+                knockBackType = KnockBackType.Large,
+                knockBackValue = 500,
+                LiftYForce = 100,
+                hurtLiftType = HurtType.HurtLarge
+            };
+            _laserAttack.gameObject.SetActive(true);
+            var laserDamager = _laserAttack.GetComponentInChildren<DamageDealer>(true);
+            laserDamager.damageAmount = 100;
+            laserDamager.attacker = GetComponentInChildren<Health>();
+            laserDamager.bindingParry = parriable;
+            parriable.bindDamage = laserDamager;
+            var laserDetector = _laserAttack.GetComponentInChildren<TriggerDetector>(true);
+            laserDetector.Invoke("Awake", 0);
+            sniperCore.SetActive(true);
+            var laserEffector = _laserAttack.GetComponentInChildren<EffectDealer>();
+            var laserView = sniperCore.GetComponentInChildren<LaserViewController>(true);
+            laserView.gameObject.SetActive(true);
+            arm.SetActive(false);
 
-        var attackStates = transform.Find("States/Attacks");
-        var gunStateObj = new GameObject($"[{(int)Constants.GunMonsterState}] Gun");
-        gunStateObj.transform.SetParent(attackStates);
-        var gunBossState = gunStateObj.AddComponent<BossGeneralState>();
-        gunBossState.BindingAnimation = GunStateAnimation;
-        gunBossState.state = Constants.GunMonsterState;
-        AssetManager.TryGet(GunStateAnimation, out gunBossState.clip);
+            var attackStates = transform.Find("States/Attacks");
+            var gunStateObj = new GameObject($"[{(int)Constants.GunMonsterState}] Gun");
+            gunStateObj.transform.SetParent(attackStates);
+            var gunBossState = gunStateObj.AddComponent<BossGeneralState>();
+            gunBossState.BindingAnimation = GunStateAnimation;
+            gunBossState.state = Constants.GunMonsterState;
+            AssetManager.TryGet(GunStateAnimation, out gunBossState.clip);
 
-        var gunStateParent = gunStateObj.transform;
-        var linkNextMoveWeightObj = new GameObject("weight");
-        linkNextMoveWeightObj.transform.SetParent(gunStateParent);
-        var linkNextMoveWeightComp = linkNextMoveWeightObj.AddComponent<LinkNextMoveStateWeight>();
-        var gunStateWeight = new AttackWeight {
-            state = gunBossState,
-            weight = 1
-        };
-        var engagingState = _monster.GetComponentInChildren<StealthEngaging>();
-        var engagingStateWeight = new AttackWeight {
-            state = engagingState,
-            weight = 1,
-        };
-        linkNextMoveWeightComp.stateWeightList = [engagingStateWeight];
+            var gunStateParent = gunStateObj.transform;
+            var linkNextMoveWeightObj = new GameObject("weight");
+            linkNextMoveWeightObj.transform.SetParent(gunStateParent);
+            var linkNextMoveWeightComp = linkNextMoveWeightObj.AddComponent<LinkNextMoveStateWeight>();
+            var gunStateWeight = new AttackWeight {
+                state = gunBossState,
+                weight = 1
+            };
+            var engagingState = _monster.GetComponentInChildren<StealthEngaging>();
+            var engagingStateWeight = new AttackWeight {
+                state = engagingState,
+                weight = 1
+            };
+            linkNextMoveWeightComp.stateWeightList = [engagingStateWeight];
 
-        foreach (var monsterState in attackStates.GetComponentsInChildren<BossGeneralState>(true)) {
-            if (!monsterState.state.ToString().Contains("Attack")) continue;
-            if (monsterState.state is States.Attack3 or States.Attack10 or States.Attack15 or States.Attack16) continue;
-            foreach (var linkNextMoveWeight in monsterState.GetComponentsInChildren<LinkNextMoveStateWeight>(true)) {
+            foreach (var monsterState in attackStates.GetComponentsInChildren<BossGeneralState>(true)) {
+                if (!monsterState.state.ToString().Contains("Attack")) continue;
+                if (monsterState.state is States.Attack3 or States.Attack10 or States.Attack15 or States.Attack16) continue;
+                foreach (var linkNextMoveWeight in monsterState.GetComponentsInChildren<LinkNextMoveStateWeight>(true)) {
+                    linkNextMoveWeight.stateWeightList.Add(gunStateWeight);
+                }
+            }
+
+            var sniperAudioRef = sniperRef.transform.Find("LogicRoot/Audio/EnemySFX_Sniper_Attack").gameObject;
+            var sniperAudio = Instantiate(sniperAudioRef, _monster.monsterCore.logicRoot.Find("Audio"));
+            sniperAudio.name = sniperAudio.name.Replace("(Clone)", "");
+            var sniperSound = sniperAudio.GetComponent<SoundPlayer>();
+            AkBankManager.LoadBank("Dragon_Sniper", false, false, sniperSound);
+            sniperSound.EnterLevelReset();
+
+            foreach (var linkNextMoveWeight in engagingState.GetComponentsInChildren<LinkNextMoveStateWeight>(true)) {
                 linkNextMoveWeight.stateWeightList.Add(gunStateWeight);
             }
-        }
-
-        var sniperAudio = Instantiate(Mod.Instance.SniperAudio, _monster.monsterCore.logicRoot.Find("Audio"));
-        sniperAudio.name = sniperAudio.name.Replace("(Clone)", "");
-        var sniperSound = sniperAudio.GetComponent<SoundPlayer>();
-        AkBankManager.LoadBank("Dragon_Sniper", false, false, sniperSound);
-        sniperSound.EnterLevelReset();
-        
-        foreach (var linkNextMoveWeight in engagingState.GetComponentsInChildren<LinkNextMoveStateWeight>(true)) {
-            linkNextMoveWeight.stateWeightList.Add(gunStateWeight);
         }
     }
 
     private OldPivotRotate _armRotate = null!;
+
     private void StopArmFollow() {
         _armRotate.KeepLookAtPlayer = false;
     }
-    
+
     private void RestartArmFollow() {
         _armRotate.KeepLookAtPlayer = true;
     }
@@ -225,10 +227,10 @@ internal class Eigong : MonoBehaviour {
         _monster.ChangeStateIfValid(States.Engaging);
         RestartArmFollow();
     }
-    
+
     private void ResetMonster() {
         AutoAttributeManager.AutoReferenceAllChildren(gameObject);
-        
+
         Traverse.Create(_monster).Field("_inited").SetValue(false);
         _monster.Invoke("CheckInit", 0);
         _monster.EnterLevelReset();
