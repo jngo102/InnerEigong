@@ -1,6 +1,12 @@
 # Inner Eigong Change Log
 
-## [0.6.0] - 2025-05-20
+## [0.6.1] - 2025-05-22
+
+### Changed
+
+- Streamline thunderstore build process
+
+## [0.6.0] - 2025-05-21
 
 ### Changed
 

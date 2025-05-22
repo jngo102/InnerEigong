@@ -1,0 +1,11 @@
+{
+  "namespace": "JngoCreates",
+  "name": "Inner_Eigong",
+  "description": "Mods the true final boss of Nine Sols to be slightly more difficult.",
+  "version_number": "0.6.0",
+  "website_url": "https://github.com/jngo102/InnerEigong",
+  "FullName": "JngoCreates-InnerEigong",
+  "dependencies": [
+    "BepInEx-BepInExPack-5.4.2100"
+  ]
+}

@@ -3,26 +3,60 @@
         <Description>Mods the true final boss to be more difficult.</Description>
         <TargetFramework>netstandard2.1</TargetFramework>
         <AssemblyName>InnerEigong</AssemblyName>
-        <Version>0.6.0</Version>
+        <Version>0.6.1</Version>
         <LangVersion>latest</LangVersion>
         <Nullable>enable</Nullable>
         <PublishRelease>true</PublishRelease>
         <NoWarn>MSB3277</NoWarn>
 
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
+        <DebugSymbols>true</DebugSymbols>
+        <DebugType>full</DebugType>
+        <Optimize>false</Optimize>
+        <OutputPath>bin\Debug\</OutputPath>
+        <DefineConstants>DEBUG;TRACE</DefineConstants>
+        <ErrorReport>prompt</ErrorReport>
+        <WarningLevel>4</WarningLevel>
 
-        <!-- todo macOS -->
-        <NineSolsPath Condition="'$(OS)' == 'Windows_NT'">$(MSBuildProgramFiles32)/Steam/steamapps/common/Nine Sols</NineSolsPath>
-        <NineSolsPath Condition="'$(OS)' != 'Windows_NT'">$(HOME)/.local/share/Steam/steamapps/common/Nine Sols</NineSolsPath>
+        <NineSolsPath Condition="$([MSBuild]::IsOSPlatform('OSX'))">
+            $(HOME)/.local/share/Steam/steamapps/common/Nine Sols
+        </NineSolsPath>
+        <NineSolsPath Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+            $(MSBuildProgramFiles32)/Steam/steamapps/common/Nine Sols
+        </NineSolsPath>
         <DllPath>$(NineSolsPath)/NineSols_Data/Managed</DllPath>
 
-        <!-- If you're not using R2Modman/Thunderstore, this can be NineSolsPath as well. Only used in CopyDir -->
-        <ProfileDir Condition="'$(OS)' == 'Windows_NT'">$(AppData)/r2modmanPlus-local/NineSols/profiles/Default</ProfileDir>
-        <ProfileDir Condition="'$(OS)' != 'Windows_NT'">$(HOME)/.config/r2modmanPlus-local/NineSols/profiles/Default</ProfileDir>
+        <!-- If you're not using R2Modman/Thunderstore, this can be NineSolsPath as well. Only used
+        in CopyDir -->
+        <ProfileDir Condition="'$(OS)' == 'Windows_NT'">
+            $(AppData)/r2modmanPlus-local/NineSols/profiles/Default</ProfileDir>
+        <ProfileDir Condition="'$(OS)' != 'Windows_NT'">
+            $(HOME)/.config/r2modmanPlus-local/NineSols/profiles/Default</ProfileDir>
         <PackageId>InnerEigong</PackageId>
-        <!-- After building, copy the dll to this folder. Useful for hot-reloading: https://github.com/BepInEx/BepInEx.Debug/blob/master/README.md#scriptengine -->
         <CopyDir>$(ProfileDir)/BepInEx/plugins/jngo102-InnerEigong</CopyDir>
+        <!-- After building, copy the dll to this folder. Useful for hot-reloading:
+        https://github.com/BepInEx/BepInEx.Debug/blob/master/README.md#scriptengine -->
+        <CopyDir>$(ProfileDir)/BepInEx/scripts/jngo102-InnerEigong</CopyDir>
     </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
+        <DebugType>pdbonly</DebugType>
+        <Optimize>true</Optimize>
+        <OutputPath>bin\Release\</OutputPath>
+        <DefineConstants>TRACE</DefineConstants>
+        <ErrorReport>prompt</ErrorReport>
+        <WarningLevel>4</WarningLevel>
 
+        <CopyDir Condition="$([MSBuild]::IsOSPlatform('OSX'))">
+            $(MSBuildProjectDirectory)/../thunderstore/osx
+        </CopyDir>
+        <CopyDir Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+            $(MSBuildProjectDirectory)/../thunderstore\windows
+        </CopyDir>
+    </PropertyGroup>
+    <ItemGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
+        <ZipFiles Include="$(MSBuildProjectDirectory)/*.zip" />
+    </ItemGroup>
     <ItemGroup>
         <Reference Include="AK.Wwise.Unity.API">
             <HintPath>$(DllPath)/AK.Wwise.Unity.API.dll</HintPath>
@@ -60,36 +94,47 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="BepInEx.Analyzers" Version="1.*" PrivateAssets="all"/>
-        <PackageReference Include="BepInEx.Core" Version="5.*"/>
-        <PackageReference Include="BepInEx.PluginInfoProps" Version="2.*"/>
-        <PackageReference Include="UnityEngine.Modules" Version="2022.3.18" IncludeAssets="compile"/>
+        <PackageReference Include="BepInEx.Analyzers" Version="1.*" PrivateAssets="all" />
+        <PackageReference Include="BepInEx.Core" Version="5.*" />
+        <PackageReference Include="BepInEx.PluginInfoProps" Version="2.*" />
+        <PackageReference Include="UnityEngine.Modules" Version="2022.3.18" IncludeAssets="compile" />
     </ItemGroup>
-
     <ItemGroup>
         <EmbeddedResource Condition="$([MSBuild]::IsOSPlatform('OSX'))"
-                          Include="Assets\innereigongosx"/>
+            Include="Assets\innereigongosx" />
         <EmbeddedResource Condition="$([MSBuild]::IsOSPlatform('Windows'))"
-                          Include="Assets\innereigongwin"/>
+            Include="Assets\innereigongwin" />
     </ItemGroup>
-
     <Target Name="CheckReferences" BeforeTargets="BeforeBuild">
         <ItemGroup>
-            <MissingReferences Include="@(Reference)" Condition="!Exists('%(Reference.HintPath)')"/>
+            <MissingReferences Include="@(Reference)" Condition="!Exists('%(Reference.HintPath)')" />
         </ItemGroup>
-        <Error Condition="@(MissingReferences->Count()) > 0" Text="Missing reference(s);
+        <Error Condition="@(MissingReferences->Count()) > 0"
+            Text="Missing reference(s);
 @(MissingReferences->'%(HintPath)', ',&#x0A;')
-Did you forget to adjust your NineSolsPath '$(NineSolsPath)'?"/>
+Did you forget to adjust your NineSolsPath '$(NineSolsPath)'?" />
     </Target>
-
     <Target Name="CopyMod" AfterTargets="PostBuildEvent" Condition="'$(CopyDir)' != ''">
-        <Message Importance="high" Text="copying $(TargetPath) to $(CopyDir) ..."/>
-        <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(CopyDir)" SkipUnchangedFiles="true"/>
-        <Copy SourceFiles="$(TargetDir)$(TargetName).pdb" DestinationFolder="$(CopyDir)" SkipUnchangedFiles="true"/>
-    </Target>
-
-    <Target Name="PackageMod" AfterTargets="Publish">
-        <Copy SourceFiles="$(TargetPath)" DestinationFolder="../thunderstore/build/dll" SkipUnchangedFiles="true"/>
-        <Exec Command="tcli build --config-path ../thunderstore/thunderstore.toml"/>
+        <Message Importance="high" Text="Copying $(TargetPath) to $(CopyDir) ..." />
+        <Copy
+            SourceFiles="$(TargetPath);$(TargetDir)$(TargetName).pdb"
+            DestinationFolder="$(CopyDir)" SkipUnchangedFiles="true" />
+        <ZipDirectory
+            Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU' And $([MSBuild]::IsOSPlatform('OSX'))"
+            SourceDirectory="$(CopyDir)"
+            DestinationFile="$(TargetName)_macOS.zip"
+            Overwrite="true"
+        />
+        <ZipDirectory
+            Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU' And $([MSBuild]::IsOSPlatform('Windows'))"
+            SourceDirectory="$(CopyDir)"
+            DestinationFile="$(TargetName)_Windows.zip"
+            Overwrite="true"
+        />
+        <Move
+            Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'"
+            SourceFiles="@(ZipFiles)"
+            DestinationFolder="$(MSBuildProjectDirectory)/.."
+        />
     </Target>
 </Project>
