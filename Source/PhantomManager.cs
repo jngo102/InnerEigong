@@ -40,7 +40,7 @@ internal static class PhantomManager {
     internal static async UniTask SpawnPhantoms(MonsterBase refMonster, float spawnLengthSec = 0.25f) {
         var spawnInterval = spawnLengthSec / _phantoms.Count;
         _spawnCancelSrcs ??= new List<CancellationTokenSource>(_phantoms.Count);
-        
+
         List<UniTask> spawnTasks = new(_phantoms.Count);
         for (var i = 0; i < _phantoms.Count; i++) {
             var phantom = _phantoms[i];
@@ -50,7 +50,7 @@ internal static class PhantomManager {
                 if (spawnCancelSrc != null) {
                     spawnCancelSrc.Cancel();
                     _spawnCancelSrcs.Remove(spawnCancelSrc);
-                }   
+                }
             }
             spawnCancelSrc = new CancellationTokenSource();
             _spawnCancelSrcs.Insert(i, spawnCancelSrc);
@@ -64,7 +64,17 @@ internal static class PhantomManager {
             await UniTask.Delay(TimeSpan.FromSeconds(spawnInterval), cancellationToken: spawnCancelSrc.Token);
         }
 
-        
+
         await UniTask.WhenAll(spawnTasks);
+    }
+
+    /// <summary>
+    /// Clear out all instantiated <see cref="Phantom">phantom</see> objects.
+    /// </summary>
+    internal static void Unload() {
+        foreach (var phantom in _phantoms) {
+            UObj.DestroyImmediate(phantom);
+        }
+        _phantoms.Clear();
     }
 }

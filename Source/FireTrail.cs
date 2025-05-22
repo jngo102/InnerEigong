@@ -10,7 +10,7 @@ namespace InnerEigong;
 /// Leaves a trail of fire at the actor's feet.
 /// </summary>
 internal class FireTrail : MonoBehaviour {
-    public float flameSpacing = 35;
+    internal float flameSpacing = 35;
 
     private ActorBody _body = null!;
     private Collider2D _collider = null!;
@@ -62,7 +62,7 @@ internal class FireTrail : MonoBehaviour {
     /// Spawn a Jiequan flame.
     /// </summary>
     /// <param name="position">The position to spawn the flame at.</param>
-    public void SpawnFlame(Vector2 position) {
+    internal void SpawnFlame(Vector2 position) {
         var flame = _firePool.Borrow(position, Quaternion.identity);
         if (!flame) return;
         flame.OnReturnEvent.AddListener((obj) => {
@@ -76,7 +76,7 @@ internal class FireTrail : MonoBehaviour {
     /// <summary>
     /// Reset the flames list.
     /// </summary>
-    public void ResetFlames() {
+    internal void ResetFlames() {
         _flames.Clear();
     }
 }

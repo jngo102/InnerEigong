@@ -4,7 +4,7 @@ schemaVersion = "0.0.1"
 [package]
 namespace = "JngoCreates"
 name = "InnerEigong"
-versionNumber = "0.5.0"
+versionNumber = "0.6.0"
 description = "Mods the true final boss of Nine Sols to be more difficult. "
 websiteUrl = "https://github.com/jngo102/InnerEigong"
 containsNsfwContent = false
@@ -23,4 +23,4 @@ target = "."
 
 [publish]
 repository = "https://thunderstore.io"
-communities = [ "nine-sols" ]
+communities = ["nine-sols"]

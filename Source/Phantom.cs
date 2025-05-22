@@ -10,12 +10,13 @@ namespace InnerEigong;
 /// <summary>
 /// Represents an enemy doppelgänger that attacks alongside the actual enemy.
 /// </summary>
+[RequireComponent(typeof(MonsterBase))]
 internal class Phantom : MonoBehaviour {
     /// <summary>
     /// Cached <see cref="MonsterBase">monster</see> component.
     /// </summary>
     private MonsterBase _monster;
-    
+
     private void Start() {
         AutoAttributeManager.AutoReferenceAllChildren(gameObject);
 
@@ -28,7 +29,7 @@ internal class Phantom : MonoBehaviour {
             rend.TryGetCompOrAdd<_2dxFX_ColorRGB>();
             rend.TryGetCompOrAdd<_2dxFX_Negative>();
         }
-        
+
         _monster.Hide();
     }
 

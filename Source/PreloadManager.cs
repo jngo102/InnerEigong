@@ -24,7 +24,7 @@ internal class PreloadManager {
     internal static async UniTask Initialize() {
         await Preload();
     }
-    
+
     /// <summary>
     /// Fetch a preloaded game object.
     /// </summary>
@@ -85,13 +85,13 @@ internal class PreloadManager {
 
     private static async UniTask Preload() {
         DestroyAllGameObjects.DestroyingAll = true;
-        
+
         Dictionary<string, Dictionary<string, string>> scenesToPaths = new();
         foreach (var (key, (sceneName, objPath)) in PreloadedObjectMap) {
             if (scenesToPaths.ContainsKey(sceneName)) {
                 scenesToPaths[sceneName].Add(key, objPath);
             } else {
-                scenesToPaths.Add(sceneName, new Dictionary<string, string> { [key] = objPath});
+                scenesToPaths.Add(sceneName, new Dictionary<string, string> { [key] = objPath });
             }
         }
         foreach (var (sceneName, objMap) in scenesToPaths) {
@@ -101,6 +101,9 @@ internal class PreloadManager {
         DestroyAllGameObjects.DestroyingAll = false;
     }
 
+    /// <summary>
+    /// Unload all preloaded assets.
+    /// </summary>
     internal static void Unload() {
         foreach (var preloadedObj in _preloadedObjects.Values) {
             Object.DestroyImmediate(preloadedObj);
@@ -109,7 +112,7 @@ internal class PreloadManager {
     }
 
     private static GameObject? GetGameObjectFromArray(GameObject[] objects, string objPath) {
-        // Split object name into root and hcild names based on '/'
+        // Split object name into root and child names based on '/'
         string rootName;
         string? childName = null;
 
