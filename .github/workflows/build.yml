@@ -90,7 +90,7 @@ jobs:
         run: dotnet restore
       - name: Check against all game versions
         shell: bash
-        run: build.sh ${{ matrix.target.param }}
+        run: ./build.sh ${{ matrix.target.param }}
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
