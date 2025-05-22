@@ -86,15 +86,13 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 9
-      - name: Restore dependencies
-        run: dotnet restore
       - name: Check against all game versions
         shell: bash
         run: ./build.sh ${{ matrix.target.param }}
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: 'Build $${{ matrix.target.title }}'
+          name: 'Build ${{ matrix.target.title }}'
           path: '*.zip'
       - name: Get publish zip
         id: get_zip

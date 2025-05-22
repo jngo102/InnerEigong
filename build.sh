@@ -50,9 +50,10 @@ createConfig() {
 
 build() {
   cd "$scriptDir"
-  cut -f1 -d' ' libs-stripped/versions.txt | while IFS= read -r version; do
-    echo "Checking $version"
-    dotnet build --no-restore -p:DllPath="$PWD/libs-stripped/$version" --configuration Release
+  dotnet restore
+  version=$(cat $PWD/libs-stripped/versions.txt | tail -1)
+  echo "Checking $version..."
+  dotnet build --no-restore -p:DllPath="$PWD/libs-stripped/$version" --configuration Release
   done
 }
 
