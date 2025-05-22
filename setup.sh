@@ -21,14 +21,6 @@ createConfig() {
   cd "$scriptDir"
 }
 
-build() {
-  cd "$scriptDir"
-  dotnet restore
-  version=$(cat $PWD/libs-stripped/versions.txt | tail -1)
-  echo "Checking $version..."
-  dotnet build --no-restore -p:DllPath="$PWD/libs-stripped/$version" --configuration Release
-}
-
 scriptPath=$(realpath $0)
 scriptDir=$(dirname $scriptPath)
 thunderstoreDir="$scriptDir/thunderstore"
@@ -41,4 +33,3 @@ if [[ $target == "windows" ]]; then
 elif [[ $target == "osx" ]]; then
   createConfig "$target" "Mac" "macOS"
 fi
-build

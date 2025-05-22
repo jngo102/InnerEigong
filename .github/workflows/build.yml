@@ -62,6 +62,25 @@ jobs:
           body: ${{ steps.get_changelog.outputs.body }}
           draft: false
           prerelease: false
+      
+      - name: Set up Thunderstore (macOS)
+        run: ./setup.sh osx ${{ steps.get_mod_name.outputs.mod_name }} ${{ steps.get_version.outputs.version }}
+
+      - name: Set up Thunderstore (Windows)
+        run: ./setup.sh windows ${{ steps.get_mod_name.outputs.mod_name }} ${{ steps.get_version.outputs.version }}
+      
+      - name: Upload Thunderstore artifact (macOS)
+        uses: actions/upload-artifact@v4
+        with:
+          name: 'Thunderstore macOS'
+          path: thunderstore/osx
+      
+      - name: Upload Thunderstore artifact (Windows)
+        uses: actions/upload-artifact@v4
+        with:
+          name: 'Thunderstore Windows'
+          path: thunderstore/windows
+          
   build_and_publish:
     name: 'Build and Publish (${{ matrix.target.title }})'
     needs: setup_release
@@ -71,12 +90,20 @@ jobs:
       matrix:
         target:
           [
-            { runner: macos-latest, param: osx, title: macOS },
-            { runner: windows-latest, param: windows, title: Windows },
+            { runner: macos-latest, title: macOS },
+            { runner: windows-latest, title: Windows },
           ]
     runs-on: ${{ matrix.target.runner }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download Thunderstore artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: 'Thunderstore ${{ matrix.target.title }}'
+          path: thunderstore
+          
       - name: Download libs-stripped
         uses: actions/checkout@v4
         with:
@@ -85,20 +112,26 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 9
-      - name: Check against all game versions
-        shell: bash
-        run: ./build.sh ${{ matrix.target.param }} ${{ needs.setup_release.outputs.mod_name }} ${{ needs.setup_release.outputs.mod_version }}
+          dotnet-version: 8
+      - name: Build project
+        run: |
+          dotnet restore
+          version=$(cat $pwd/libs-stripped/versions.txt | tail -1)
+          echo "Checking $version..."
+          dotnet build --no-restore -p:DllPath="$pwd/libs-stripped/$version" --configuration Release
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: 'Build ${{ matrix.target.title }}'
           path: '*.zip'
+
       - name: Get publish zip
         id: get_zip
         shell: bash
         run: |
           echo "file_path=$(find . -iname *.zip | head -1)" >> $GITHUB_OUTPUT
+
       - name: Upload zip release asset
         uses: actions/upload-release-asset@v1
         env:
@@ -133,7 +166,7 @@ jobs:
           deps_start="\"dependencies\": \["
           deps_end="\]"
           currentLines=$(awk "/$deps_start/,/$deps_end/ { print }" manifest.json | sed '1d;$d')
-          newLines="\t\t\"JngoCreates-${modName}-Windows-$versionNumber\",\n\t\t\"JngoCreates-${modName}-macOS-$versionNumber\""
+          newLines="\t\t\"JngoCreates-${modName}Windows-$versionNumber\",\n\t\t\"JngoCreates-${modName}Mac-$versionNumber\""
           sed --in-place --expression "s/$currentLines/$newLines/" manifest.json
       - name: Zip mod pack
         run: |
