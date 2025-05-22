@@ -11,7 +11,7 @@ getModName() {
   cd "$scriptDir"
   tag=AssemblyName
   getMSBuildFile
-  modName=$(grep --only-matching --perl-regexp "<$tag>\K.*(?=</$tag>)" $csproj)
+  modName=$(grep -o -P "<$tag>\K.*(?=</$tag>)" $csproj)
   cd "$prevPath"
 }
 
@@ -20,7 +20,7 @@ getModVersion() {
   cd "$scriptDir"
   tag=Version
   getMSBuildFile
-  versionNumber=$(grep --only-matching --perl-regexp "<$tag>\K.*(?=</$tag>)" $csproj)
+  versionNumber=$(grep -o -P "<$tag>\K.*(?=</$tag>)" $csproj)
   cd "$prevPath"
 }
 
@@ -35,13 +35,13 @@ createConfig() {
   getModVersion
   versionKey="version_number"
   versionEntry="\"$versionKey\": \"[0-9]+\.[0-9]+\.[0-9]+\""
-  sed --in-place -E "s/$versionEntry/\"$versionKey\": \"$versionNumber\"/" manifest.json
+  sed -i -E "s/$versionEntry/\"$versionKey\": \"$versionNumber\"/" manifest.json
   getModName
   nameEntry="\"name\": \".*\""
-  sed --in-place --expression "s/$nameEntry/\"name\": \"$modName$nameSuffix\"/" manifest.json
+  sed -i -e "s/$nameEntry/\"name\": \"$modName$nameSuffix\"/" manifest.json
   fullNameBase="JngoCreates-$modName"
   fullNameEntry="\"FullName\": \"$fullNameBase\""
-  sed --in-place --expression "s/$fullNameEntry/\"FullName\": \"$fullNameBase-$fullNameSuffix\"/" manifest.json
+  sed -i -e "s/$fullNameEntry/\"FullName\": \"$fullNameBase-$fullNameSuffix\"/" manifest.json
   cd "$scriptDir"
 }
 
