@@ -114,6 +114,7 @@ jobs:
         with:
           dotnet-version: 8
       - name: Build project
+        shell: bash
         run: |
           dotnet restore
           version=$(cat $PWD/libs-stripped/versions.txt | tail -1)
