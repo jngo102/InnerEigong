@@ -2,28 +2,6 @@
 
 unset $modName
 
-getMSBuildFile() {
-  csproj=$(find . -iname *.csproj | head -1)
-}
-
-getModName() {
-  prevPath=$(pwd)
-  cd "$scriptDir"
-  tag=AssemblyName
-  getMSBuildFile
-  modName=$(grep -o -P "<$tag>\K.*(?=</$tag>)" $csproj)
-  cd "$prevPath"
-}
-
-getModVersion() {
-  prevPath=$(pwd)
-  cd "$scriptDir"
-  tag=Version
-  getMSBuildFile
-  versionNumber=$(grep -o -P "<$tag>\K.*(?=</$tag>)" $csproj)
-  cd "$prevPath"
-}
-
 createConfig() {
   folderName=$1
   nameSuffix=$2
@@ -32,11 +10,9 @@ createConfig() {
   mkdir -p "$folderName"
   cp * "$folderName"
   cd "$folderName"
-  getModVersion
   versionKey="version_number"
   versionEntry="\"$versionKey\": \"[0-9]+\.[0-9]+\.[0-9]+\""
-  sed -i -E "s/$versionEntry/\"$versionKey\": \"$versionNumber\"/" manifest.json
-  getModName
+  sed -i -E "s/$versionEntry/\"$versionKey\": \"$modVersion\"/" manifest.json
   nameEntry="\"name\": \".*\""
   sed -i -e "s/$nameEntry/\"name\": \"$modName$nameSuffix\"/" manifest.json
   fullNameBase="JngoCreates-$modName"
@@ -57,6 +33,8 @@ scriptPath=$(realpath $0)
 scriptDir=$(dirname $scriptPath)
 thunderstoreDir="$scriptDir/thunderstore"
 target=$1
+modName=$2
+modVersion=$3
 cd "$thunderstoreDir"
 if [[ $target == "windows" ]]; then
   createConfig "$target" "Windows" "Windows"
