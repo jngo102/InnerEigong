@@ -62,25 +62,25 @@ jobs:
           body: ${{ steps.get_changelog.outputs.body }}
           draft: false
           prerelease: false
-      
+
       - name: Set up Thunderstore (macOS)
         run: ./setup.sh osx ${{ steps.get_mod_name.outputs.mod_name }} ${{ steps.get_version.outputs.version }}
 
       - name: Set up Thunderstore (Windows)
         run: ./setup.sh windows ${{ steps.get_mod_name.outputs.mod_name }} ${{ steps.get_version.outputs.version }}
-      
+
       - name: Upload Thunderstore artifact (macOS)
         uses: actions/upload-artifact@v4
         with:
           name: 'Thunderstore macOS'
           path: thunderstore/osx
-      
+
       - name: Upload Thunderstore artifact (Windows)
         uses: actions/upload-artifact@v4
         with:
           name: 'Thunderstore Windows'
           path: thunderstore/windows
-          
+
   build_and_publish:
     name: 'Build and Publish (${{ matrix.target.title }})'
     needs: setup_release
@@ -90,8 +90,8 @@ jobs:
       matrix:
         target:
           [
-            { runner: macos-latest, title: macOS },
-            { runner: windows-latest, title: Windows },
+            { runner: macos-latest, id: osx, title: macOS },
+            { runner: windows-latest, id: windows, title: Windows },
           ]
     runs-on: ${{ matrix.target.runner }}
     steps:
@@ -102,8 +102,8 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: 'Thunderstore ${{ matrix.target.title }}'
-          path: thunderstore
-          
+          path: thunderstore/${{ matrix.target.id }}
+
       - name: Download libs-stripped
         uses: actions/checkout@v4
         with:
@@ -116,9 +116,9 @@ jobs:
       - name: Build project
         run: |
           dotnet restore
-          version=$(cat $pwd/libs-stripped/versions.txt | tail -1)
+          version=$(cat $PWD/libs-stripped/versions.txt | tail -1)
           echo "Checking $version..."
-          dotnet build --no-restore -p:DllPath="$pwd/libs-stripped/$version" --configuration Release
+          dotnet build --no-restore -p:DllPath="$PWD/libs-stripped/$version" --configuration Release
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
