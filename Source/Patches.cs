@@ -25,7 +25,6 @@ internal static class Patches {
             overlayer.Smoothing = 0.05f;
         }
         // __instance.AddComp(typeof(FireTrail));
-        // SpriteManager.Initialize(Constants.BossSpritePrefix).Forget();
     }
 
     /// <summary>
@@ -92,7 +91,7 @@ internal static class Patches {
     private static async void HandleLaserFire(MonsterBase __instance, MonsterBase.States targetState) {
         if (!__instance.TryGetComponent<Eigong>(out var eigongComp)) return;
         if (targetState == Constants.GunMonsterState) {
-            await eigongComp.FireGun();
+            await eigongComp.FireLaser();
         }
     }
 
@@ -105,7 +104,7 @@ internal static class Patches {
     private static void HealEveryInjury(PlayerHealth __instance) {
         __instance.OnTakeDamageEvent.AddListener(__instance.GainFull);
     }
-    
+
     /// <summary>
     /// <see cref="Health.BecomeInvincible">Force invincibility</see> for debug purposes.
     /// </summary>

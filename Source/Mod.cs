@@ -7,13 +7,16 @@ using UnityEngine.SceneManagement;
 
 namespace InnerEigong;
 
+/// <summary>
+/// The main mod class for Inner Eigong.
+/// </summary>
 [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
 public class Mod : BaseUnityPlugin {
     private static Harmony _harmony = null!;
 
     private void Awake() {
         Log.Init(Logger);
-        
+
         _harmony = new Harmony(MyPluginInfo.PLUGIN_GUID);
         _harmony.PatchAll(typeof(Patches));
 
@@ -51,6 +54,8 @@ public class Mod : BaseUnityPlugin {
 
     private void OnDestroy() {
         AssetManager.Unload();
+        PhantomManager.Unload();
+        PreloadManager.Unload();
         _harmony.UnpatchSelf();
     }
 
