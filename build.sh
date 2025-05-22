@@ -54,7 +54,6 @@ build() {
   version=$(cat $PWD/libs-stripped/versions.txt | tail -1)
   echo "Checking $version..."
   dotnet build --no-restore -p:DllPath="$PWD/libs-stripped/$version" --configuration Release
-  done
 }
 
 scriptPath=$(realpath $0)
