@@ -24,13 +24,6 @@ getModVersion() {
   cd "$prevPath"
 }
 
-modifyBaseConfig() {
-  getModVersion
-  versionKey="version_number"
-  versionEntry="\"$versionKey\": \"[0-9]+\.[0-9]+\.[0-9]+\""
-  sed --in-place --expression "s/$versionEntry$/\"$versionKey\": \"$versionNumber\"/" manifest.json
-}
-
 createConfig() {
   folderName=$1
   nameSuffix=$2
@@ -38,9 +31,13 @@ createConfig() {
   cd "$thunderstoreDir"
   mkdir -p "$folderName"
   cp * "$folderName"
+  cd "$folderName"
+  getModVersion
+  versionKey="version_number"
+  versionEntry="\"$versionKey\": \"[0-9]+\.[0-9]+\.[0-9]+\""
+  sed --in-place -E "s/$versionEntry/\"$versionKey\": \"$versionNumber\"/" manifest.json
   getModName
   nameEntry="\"name\": \".*\""
-  cd "$folderName"
   sed --in-place --expression "s/$nameEntry/\"name\": \"$modName$nameSuffix\"/" manifest.json
   fullNameBase="JngoCreates-$modName"
   fullNameEntry="\"FullName\": \"$fullNameBase\""
@@ -61,7 +58,6 @@ scriptDir=$(dirname $scriptPath)
 thunderstoreDir="$scriptDir/thunderstore"
 target=$1
 cd "$thunderstoreDir"
-modifyBaseConfig
 if [[ $target == "windows" ]]; then
   createConfig "$target" "Windows" "Windows"
 elif [[ $target == "osx" ]]; then
