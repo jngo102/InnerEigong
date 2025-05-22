@@ -1,7 +1,7 @@
 ﻿using System;
+using System.Linq;
 using Cysharp.Threading.Tasks;
 using HarmonyLib;
-using MonsterLove.StateMachine;
 using UnityEngine;
 using States = MonsterBase.States;
 
@@ -12,11 +12,11 @@ namespace InnerEigong;
 /// </summary>
 [RequireComponent(typeof(StealthGameMonster))]
 internal class Eigong : MonoBehaviour {
-    [Auto(false)]
     private StealthGameMonster _monster = null!;
     private RuntimeAnimatorController _newController = null!;
 
     private void Awake() {
+        TryGetComponent(out _monster);
         _monster.OverrideWanderingIdleTime(0);
         _monster.StartingPhaseIndex = 1;
 
@@ -52,12 +52,13 @@ internal class Eigong : MonoBehaviour {
         _armRotate = arm.AddComponent<OldPivotRotate>();
         _armRotate.inverseAngle = true;
         _armRotate.KeepLookAtPlayer = true;
-        _armRotate.minRotate = -360;
-        _armRotate.maxRotate = 360;
+        _armRotate.minRotate = -60;
+        _armRotate.maxRotate = 75;
         _armRotate.offset = 0;
         _armRotate.referenceActor = _monster;
         if (PreloadManager.TryGet("Sniper", out var sniperRef)) {
-            var sniperCoreRef = sniperRef.transform.Find("Dragon_Sniper/DragonSniper/RotateRArm/RArm/Bow/SniperLaserCore").gameObject;
+            var bow = sniperRef.transform.Find("Dragon_Sniper/DragonSniper/RotateRArm/RArm/Bow");
+            var sniperCoreRef = bow.transform.Find("SniperLaserCore").gameObject;
             var sniperCore = Instantiate(sniperCoreRef, arm.transform);
             sniperCore.name = sniperCore.name.Replace("(Clone)", "");
             sniperCore.transform.localPosition = new Vector2(-38, 5.3f);
@@ -67,6 +68,17 @@ internal class Eigong : MonoBehaviour {
                 renderer.sortingOrder = armRenderer.sortingOrder - 100;
             }
             var parriableOwner = sniperCore.AddComponent<GeneralParriableOwner>();
+            var shootPos = sniperCore.GetComponentsInChildren<SpawnAtPoint>(true).FirstOrDefault(child => child.name == "ShootPos");
+            if (shootPos) {
+                shootPos.transform.localPosition += Vector3.right;
+                var preFireCircleRef = bow.Find("BowHead/512 fade inner circle blurred");
+                var preFireCircle = Instantiate(preFireCircleRef, shootPos.transform);
+                preFireCircle.name = "Anticipation Sphere";
+                var fxOffset = Vector3.right * 24;
+                preFireCircle.transform.localPosition += fxOffset;
+                preFireCircle.gameObject.SetActive(true);
+                shootPos.transform.Find("ShootExplosion").localPosition += fxOffset;
+            }
             _laserAttack = sniperCore.GetComponentInChildren<LaserAttackController>(true);
             var parriable = _laserAttack.gameObject.AddComponent<ParriableAttackEffect>();
             parriable.param = new ParryParam {
@@ -75,7 +87,7 @@ internal class Eigong : MonoBehaviour {
                 LiftYForce = 100,
                 hurtLiftType = HurtType.HurtLarge
             };
-            _laserAttack.gameObject.SetActive(true);
+            _laserAttack.gameObject.SetActive(true);    
             var laserDamager = _laserAttack.GetComponentInChildren<DamageDealer>(true);
             laserDamager.damageAmount = 100;
             laserDamager.attacker = GetComponentInChildren<Health>();

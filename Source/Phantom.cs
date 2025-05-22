@@ -15,12 +15,12 @@ internal class Phantom : MonoBehaviour {
     /// <summary>
     /// Cached <see cref="MonsterBase">monster</see> component.
     /// </summary>
-    [Auto(false)]
     private MonsterBase _monster;
 
     private void Start() {
         AutoAttributeManager.AutoReferenceAllChildren(gameObject);
 
+        TryGetComponent(out _monster);
         _monster.EnterLevelAwake();
         _monster.EnterLevelReset();
 

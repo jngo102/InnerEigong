@@ -7,6 +7,9 @@ using UnityEngine.SceneManagement;
 
 namespace InnerEigong;
 
+/// <summary>
+/// The main mod class for Inner Eigong.
+/// </summary>
 [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
 public class Mod : BaseUnityPlugin {
     private static Harmony _harmony = null!;
