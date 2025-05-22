@@ -46,7 +46,7 @@ jobs:
           echo "$(echo "$cmd_output" | head -2)" > temp.txt
           start=$(cat temp.txt | head -1 | sed --expression 's/[]\/$*.^[]/\\&/g')
           end=$(cat temp.txt | tail -1 | sed --expression 's/[]\/$*.^[]/\\&/g')
-          body=$(awk "/$start/,/$end/ { print }" thunderstore/ChangeLog.md | head -n -1)
+          body=$(awk "/$start/,/$end/ { print }" thunderstore/CHANGELOG.md | head -n -1)
           echo 'body<<EOF' >> $GITHUB_OUTPUT
           echo "$body" >> $GITHUB_OUTPUT
           echo 'EOF' >> $GITHUB_OUTPUT
@@ -129,9 +129,8 @@ jobs:
           versionEntry="\"$versionKey\": \"[0-9]+\.[0-9]+\.[0-9]+\""
           cd thunderstore
           mkdir -p modpack
-          cp * modpack
+          rsync * modpack --exclude modpack
           cd modpack
-          ls -lart
           sed --in-place -E "s/$versionEntry/\"$versionKey\": \"$versionNumber\"/" manifest.json
           deps_start="\"dependencies\": \["
           deps_end="\]"
