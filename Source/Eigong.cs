@@ -42,7 +42,7 @@ internal class Eigong : MonoBehaviour {
         var body = _monster.monsterCore.transform.Find("Animator(Proxy)/Animator/View/YiGung/Body");
         var arm = AssetManager.Inst<GameObject>("Arm", body);
         arm.name = arm.name.Replace("(Clone)", "");
-        arm.transform.localPosition = new Vector2(20, -20);
+        arm.transform.localPosition = new Vector2(20, -23);
         var armRenderer = arm.GetComponent<SpriteRenderer>();
         armRenderer.sortingLayerName = "Monster";
         var overlayer = arm.AddComponent<ColorKeyOverlayer>();
@@ -68,6 +68,7 @@ internal class Eigong : MonoBehaviour {
                 renderer.sortingOrder = armRenderer.sortingOrder - 100;
             }
             var parriableOwner = sniperCore.AddComponent<GeneralParriableOwner>();
+            Traverse.Create(parriableOwner).Field<MonsterBase>("bindMonster").Value = _monster;
             var shootPos = sniperCore.GetComponentsInChildren<SpawnAtPoint>(true).FirstOrDefault(child => child.name == "ShootPos");
             if (shootPos) {
                 shootPos.transform.localPosition += Vector3.right;
@@ -87,7 +88,7 @@ internal class Eigong : MonoBehaviour {
                 LiftYForce = 100,
                 hurtLiftType = HurtType.HurtLarge
             };
-            _laserAttack.gameObject.SetActive(true);    
+            _laserAttack.gameObject.SetActive(true);
             var laserDamager = _laserAttack.GetComponentInChildren<DamageDealer>(true);
             laserDamager.damageAmount = 100;
             laserDamager.attacker = GetComponentInChildren<Health>();
@@ -117,7 +118,7 @@ internal class Eigong : MonoBehaviour {
                 state = gunBossState,
                 weight = 1
             };
-            var engagingState = _monster.GetComponentInChildren<StealthEngaging>();
+            var engagingState = _monster.GetComponentInChildren<StealthEngaging>(true);
             var engagingStateWeight = new AttackWeight {
                 state = engagingState,
                 weight = 1
@@ -126,7 +127,7 @@ internal class Eigong : MonoBehaviour {
 
             foreach (var monsterState in attackStates.GetComponentsInChildren<BossGeneralState>(true)) {
                 if (!monsterState.state.ToString().Contains("Attack")) continue;
-                if (monsterState.state is States.Attack3 or States.Attack10 or States.Attack15 or States.Attack16) continue;
+                if (monsterState.state is States.TurnAround or States.Attack2 or States.Attack3 or States.Attack6 or States.Attack8 or States.Attack10 or States.Attack15 or States.Attack16) continue;
                 foreach (var linkNextMoveWeight in monsterState.GetComponentsInChildren<LinkNextMoveStateWeight>(true)) {
                     linkNextMoveWeight.stateWeightList.Add(gunStateWeight);
                 }
@@ -162,26 +163,22 @@ internal class Eigong : MonoBehaviour {
         animator.runtimeAnimatorController = _newController;
         animator.Play(0);
         RestartArmFollow();
-        await UniTask.Delay(TimeSpan.FromSeconds(1.75f));
+        await UniTask.Delay(TimeSpan.FromSeconds(1.5f));
         // Laser 1
         StopArmFollow();
         _monster.FacePlayer();
         await UniTask.Delay(TimeSpan.FromSeconds(0.5f));
         RestartArmFollow();
-        await UniTask.Delay(TimeSpan.FromSeconds(0.5f));
+        await UniTask.Delay(TimeSpan.FromSeconds(0.5f + 1 / 3f));
         // Laser 2
         StopArmFollow();
         _monster.FacePlayer();
-        await UniTask.Delay(TimeSpan.FromSeconds(0.1f));
-        RestartArmFollow();
-        await UniTask.Delay(TimeSpan.FromSeconds(0.15f));
+        await UniTask.Delay(TimeSpan.FromSeconds(1 / 3f));
         // Laser 3
-        StopArmFollow();
         _monster.FacePlayer();
-        await UniTask.Delay(TimeSpan.FromSeconds(1));
+        await UniTask.Delay(TimeSpan.FromSeconds(5 / 6f));
         animator.runtimeAnimatorController = oldController;
         _monster.ChangeStateIfValid(States.Engaging);
-        RestartArmFollow();
     }
 
     private void ResetMonster() {
