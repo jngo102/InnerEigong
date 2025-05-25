@@ -157,7 +157,7 @@ internal class Eigong : MonoBehaviour {
 #if DEBUG
         var gunWeight = 100;
 #else
-        var gunWeight = 0.5f;
+        var gunWeight = 1;
 #endif
         var gunStateWeight = new AttackWeight {
             state = gunBossState,
