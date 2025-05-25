@@ -41,7 +41,7 @@ internal static class Patches {
     [HarmonyPatch(typeof(StealthGameMonster), "Awake")]
     private static void ModifyEigong(StealthGameMonster __instance) {
         if (__instance.gameObject.name != Constants.BossName) return;
-        // PhantomManager.Initialize(__instance.gameObject);
+        PhantomManager.Initialize(__instance.gameObject);
         __instance.TryGetCompOrAdd<Eigong>();
         // __instance.AddComp(typeof(FireTrail));
     }
