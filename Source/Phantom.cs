@@ -17,18 +17,18 @@ internal class Phantom : MonoBehaviour {
     /// </summary>
     private MonsterBase _monster;
 
-    private void Start() {
+    private void Awake() {
         AutoAttributeManager.AutoReferenceAllChildren(gameObject);
 
         TryGetComponent(out _monster);
         _monster.EnterLevelAwake();
         _monster.EnterLevelReset();
 
-        foreach (var rend in GetComponentsInChildren<SpriteRenderer>()) {
-            if (rend.name.Contains("Shadow")) continue;
-            rend.TryGetCompOrAdd<_2dxFX_ColorRGB>();
-            rend.TryGetCompOrAdd<_2dxFX_Negative>();
-        }
+        foreach (var color in GetComponentsInChildren<_2dxFX_ColorRGB>(true)) {
+            if (color.name.Contains("Shadow")) continue;
+            color.gameObject.AddComponent<_2dxFX_Negative>();
+            Destroy(color);
+        } 
 
         _monster.Hide();
     }

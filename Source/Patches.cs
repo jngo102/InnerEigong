@@ -1,4 +1,5 @@
-﻿using HarmonyLib;
+﻿using System.Linq;
+using HarmonyLib;
 using I2.Loc;
 using UnityEngine;
 
@@ -9,21 +10,39 @@ namespace InnerEigong;
 /// </summary>
 internal static class Patches {
     /// <summary>
+    /// Apply custom cosmic cloak material to all Eigong renderers.
+    /// </summary>
+    // [HarmonyPostfix]
+    // [HarmonyPatch(typeof(GameLevel), nameof(GameLevel.Awake))]
+    // private static void ApplyMaterials(GameLevel __instance) {
+    //     if (__instance.SceneName != Constants.BossSceneName) return;
+    //     if (!AssetManager.TryGet<Material>("_2dxFX_ColorKeyOverlay", out var colorKeyOverlayMaterial)) return;
+    //     var overlayScaleID = Shader.PropertyToID("_OverlayScale");
+    //     var toleranceID = Shader.PropertyToID("_Tolerance");
+    //     var smoothingID = Shader.PropertyToID("_Smoothing");
+    //     foreach (var yiGung in Object.FindObjectsOfType<GameObject>(true).Where(go => go.name == "YiGung")) {
+    //         var color = yiGung.transform.Find("Body").GetComponent<_2dxFX_ColorRGB>();
+    //         if (!color) continue;
+    //         if (yiGung.GetComponentInParent<Phantom>()) continue;
+    //         if (color.TryGetComponent<SpriteRenderer>(out var spriteRenderer)) {
+    //             spriteRenderer.material = colorKeyOverlayMaterial;
+    //             spriteRenderer.material?.SetFloat(overlayScaleID, 100);
+    //             spriteRenderer.material?.SetFloat(toleranceID, 0.1f);
+    //             spriteRenderer.material?.SetFloat(smoothingID, 0.05f);
+    //         }
+    //         Object.Destroy(color);
+    //     }
+    // }
+
+    /// <summary>
     /// Add <see cref="Eigong">custom behavior</see> to the Eigong boss.
     /// </summary>  
     [HarmonyPrefix]
     [HarmonyPatch(typeof(StealthGameMonster), "Awake")]
     private static void ModifyEigong(StealthGameMonster __instance) {
         if (__instance.gameObject.name != Constants.BossName) return;
-        PhantomManager.Initialize(__instance.gameObject);
+        // PhantomManager.Initialize(__instance.gameObject);
         __instance.TryGetCompOrAdd<Eigong>();
-        foreach (var color in __instance.GetComponentsInChildren<_2dxFX_ColorRGB>(true)) {
-            Object.Destroy(color);
-            var overlayer = color.TryGetCompOrAdd<ColorKeyOverlayer>();
-            overlayer.OverlayScale = 100;
-            overlayer.Tolerance = 0.1f;
-            overlayer.Smoothing = 0.05f;
-        }
         // __instance.AddComp(typeof(FireTrail));
     }
 
@@ -85,8 +104,8 @@ internal static class Patches {
             _ => __result
         };
     }
-
-    [HarmonyPostfix]
+    
+    [HarmonyPrefix]
     [HarmonyPatch(typeof(MonsterBase), nameof(MonsterBase.ChangeStateIfValid), typeof(MonsterBase.States), typeof(MonsterBase.States))]
     private static async void HandleLaserFire(MonsterBase __instance, MonsterBase.States targetState) {
         if (!__instance.TryGetComponent<Eigong>(out var eigongComp)) return;
@@ -95,6 +114,21 @@ internal static class Patches {
         }
     }
 
+    // [HarmonyPrefix]
+    // [HarmonyPatch(typeof(EffectDealer), "DelayShootEffect")]
+    // private static void ResetAnimatorOnDeath(EffectDealer __instance, EffectReceiver receiver, EffectHitData data) {
+    //     var eigong = receiver.GetComponentInParent<Eigong>();
+    //     if (!eigong) return;
+    //     if (!__instance.GetComponentInParent<Player>()) return;
+    //     if (eigong.TryGetComponent<StealthGameMonster>(out var monster)) {
+    //         if (monster.CurrentState is not (Constants.GunMonsterState or MonsterBase.States.FooStunEnter or MonsterBase.States.BossAngry)) return;
+    //         Log.Debug("Next value: " + (monster.postureSystem.RemainTotal - data.dealer.FinalValue));
+    //         if (monster.postureSystem.RemainTotal - data.dealer.FinalValue <= 0) {
+    //             eigong.HandleDeath();
+    //         }
+    //     }
+    // }
+
 #if DEBUG
     /// <summary>
     /// Set up <see cref="PlayerHealth">player health</see> so that it automatically and fully heal all injuries when taking damage.
@@ -102,7 +136,7 @@ internal static class Patches {
     [HarmonyPostfix]
     [HarmonyPatch(typeof(PlayerHealth), "Awake")]
     private static void HealEveryInjury(PlayerHealth __instance) {
-        __instance.OnTakeDamageEvent.AddListener(__instance.GainFull);
+        // __instance.OnTakeDamageEvent.AddListener(__instance.GainFull);
     }
 
     /// <summary>
@@ -111,8 +145,8 @@ internal static class Patches {
     [HarmonyPostfix]
     [HarmonyPatch(typeof(Health), nameof(Health.RemoveInvincible))]
     private static void ForceInvincible(Health __instance) {
-        // var player = __instance.transform.root.GetComponentInChildren<Player>();
-        // if (player) __instance.BecomeInvincible(player);
+        var player = __instance.transform.root.GetComponentInChildren<Player>();
+        if (player) __instance.BecomeInvincible(player);
     }
 #endif
 }

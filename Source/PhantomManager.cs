@@ -39,7 +39,6 @@ internal static class PhantomManager {
     /// <param name="spawnLengthSec">The duration in seconds that the <see cref="Phantom">phantoms</see> will spawn for.</param>
     internal static async UniTask SpawnPhantoms(MonsterBase refMonster, float spawnLengthSec = 0.25f) {
         var spawnInterval = spawnLengthSec / _phantoms.Count;
-        _spawnCancelSrcs ??= new List<CancellationTokenSource>(_phantoms.Count);
 
         List<UniTask> spawnTasks = new(_phantoms.Count);
         for (var i = 0; i < _phantoms.Count; i++) {

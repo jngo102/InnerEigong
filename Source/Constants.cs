@@ -18,5 +18,9 @@ internal static class Constants {
     /// <summary>
     /// The gun firing monster state.
     /// </summary>
-    internal const MonsterBase.States GunMonsterState = MonsterBase.States.AttackParrying2;
+    internal const MonsterBase.States GunMonsterState = MonsterBase.States.Trolling;
+    /// <summary>
+    /// The gun firing animation name.
+    /// </summary>
+    internal const string GunMonsterAnimation = "Prep";
 }

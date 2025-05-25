@@ -1,5 +1,11 @@
 # Inner Eigong Change Log
 
+## [0.6.2] - 2025-05-25
+
+### Fixed
+
+- Fixed bugs with swapping to a custom animator controller
+
 ## [0.6.1] - 2025-05-22
 
 ### Changed

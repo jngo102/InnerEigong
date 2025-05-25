@@ -69,7 +69,7 @@ internal static class AssetManager {
                 asset = assetObj as T;
                 return true;
             }
-            Log.Error($"Failed to asset {assetName}");
+            Log.Error($"Failed to get asset {assetName}");
             asset = null;
             return false;
         }
