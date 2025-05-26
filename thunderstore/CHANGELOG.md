@@ -1,6 +1,16 @@
 # Inner Eigong Change Log
 
-## [0.6.3] - 2025-05-
+## [0.6.4] - 2025-05-26
+
+### Fixed
+
+- Fixed phantoms being damageable
+
+## [0.6.3] - 2025-05-26
+
+### Added
+
+- Added boss configuration
 
 ## [0.6.2] - 2025-05-25
 

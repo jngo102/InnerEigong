@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using Cysharp.Threading.Tasks;
 using System.Threading;
 using HarmonyLib;
@@ -23,6 +24,11 @@ internal class Phantom : MonoBehaviour {
         TryGetComponent(out _monster);
         _monster.Invoke("CheckInit", 0);
         _monster.EnterLevelReset();
+        foreach (var decreasePostureReceiver in _monster.damageReceivers) {
+            foreach (var effectReceiver in Traverse.Create(decreasePostureReceiver).Field<EffectReceiver[]>("effectReceivers").Value) {
+                Destroy(effectReceiver.gameObject);
+            }
+        }
 
         foreach (var color in GetComponentsInChildren<_2dxFX_ColorRGB>(true)) {
             if (color.name.Contains("Shadow")) continue;
