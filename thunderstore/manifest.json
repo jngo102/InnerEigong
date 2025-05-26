@@ -2,7 +2,7 @@
   "namespace": "JngoCreates",
   "name": "Inner_Eigong",
   "description": "Mods the true final boss of Nine Sols to be slightly more difficult.",
-  "version_number": "0.6.2",
+  "version_number": "0.6.3",
   "website_url": "https://github.com/jngo102/InnerEigong",
   "FullName": "JngoCreates-InnerEigong",
   "dependencies": [

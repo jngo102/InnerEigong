@@ -1,9 +1,9 @@
 ﻿using System;
-using System.Reflection;
 using Cysharp.Threading.Tasks;
 using System.Threading;
 using HarmonyLib;
 using UnityEngine;
+using Random = System.Random;
 
 namespace InnerEigong;
 
@@ -17,18 +17,18 @@ internal class Phantom : MonoBehaviour {
     /// </summary>
     private MonsterBase _monster;
 
-    private void Awake() {
+    private void Start() {
         AutoAttributeManager.AutoReferenceAllChildren(gameObject);
 
         TryGetComponent(out _monster);
-        _monster.EnterLevelAwake();
+        _monster.Invoke("CheckInit", 0);
         _monster.EnterLevelReset();
 
         foreach (var color in GetComponentsInChildren<_2dxFX_ColorRGB>(true)) {
             if (color.name.Contains("Shadow")) continue;
             color.gameObject.AddComponent<_2dxFX_Negative>();
             Destroy(color);
-        } 
+        }
 
         _monster.Hide();
     }
@@ -36,12 +36,11 @@ internal class Phantom : MonoBehaviour {
     /// <summary>
     /// Generate a new <see cref="Guid">GUID</see> to make this phantom unique from its origin enemy.
     /// </summary>
-    /// <param name="seed">A unique seed for <see cref="Guid">GUID</see> randomization.</param>
-    internal void ScrambleGuid(int seed) {
+    /// <param name="random">The object to randomize the phantom's <see cref="Guid">GUID</see>.</param>
+    internal void ScrambleGuid(Random random) {
         var guid = gameObject.GetGuidComponent();
         var guidType = guid.GetType();
         var bytes = new byte[16];
-        var random = new System.Random(seed);
         random.NextBytes(bytes);
         var newGuid = new Guid(bytes);
         var guidTraverse = Traverse.Create(guidType);

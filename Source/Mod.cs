@@ -17,6 +17,8 @@ public class Mod : BaseUnityPlugin {
     private void Awake() {
         Log.Init(Logger);
 
+        ConfigManager.Initialize(Config);
+
         _harmony = new Harmony(MyPluginInfo.PLUGIN_GUID);
         _harmony.PatchAll(typeof(Patches));
 

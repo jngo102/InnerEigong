@@ -1,7 +1,7 @@
 ﻿using System.Linq;
 using HarmonyLib;
 using I2.Loc;
-using UnityEngine;
+using States = MonsterBase.States;
 
 namespace InnerEigong;
 
@@ -41,11 +41,20 @@ internal static class Patches {
     [HarmonyPatch(typeof(StealthGameMonster), "Awake")]
     private static void ModifyEigong(StealthGameMonster __instance) {
         if (__instance.gameObject.name != Constants.BossName) return;
-        PhantomManager.Initialize(__instance.gameObject);
-        __instance.TryGetCompOrAdd<Eigong>();
+        __instance.gameObject.AddComponent<Eigong>();
+        PhantomManager.Initialize(__instance.gameObject, ConfigManager.NumberOfPhantoms);
         // __instance.AddComp(typeof(FireTrail));
     }
 
+    private static States[] _phantomSpawnAttacks = [
+        States.Attack1,
+        States.Attack3,
+        States.Attack4,
+        States.Attack6,
+        States.Attack12,
+        States.Attack13,
+        States.Attack18
+    ];
     /// <summary>
     /// Spawn a <see cref="Phantom">phantom</see> on certain attacks.
     /// </summary>
@@ -54,17 +63,11 @@ internal static class Patches {
         typeof(MonsterBase.States))]
     private static async void CheckSpawnPhantom(MonsterBase __instance) {
         if (__instance.name != Constants.BossName) return;
-#if !DEBUG
-        // In release builds, halve the change that a phantom spawns on certain attacks; always spawn
-        // a phantom during these attacks in debug builds
         var rand = new System.Random((int)UnityEngine.Time.timeSinceLevelLoad);
-        if (rand.Next(2) != 0) return;
-#endif
+        if (rand.Next((int)(1 / ConfigManager.PhantomSpawnChance)) != 0) return;
         var state = __instance.fsm.State;
         if (__instance is StealthGameMonster refMonster &&
-            state is MonsterBase.States.Attack1 or MonsterBase.States.Attack3 or MonsterBase.States.Attack4
-                or MonsterBase.States.Attack6 or MonsterBase.States.Attack12 or MonsterBase.States.Attack13
-                or MonsterBase.States.Attack18) {
+            _phantomSpawnAttacks.Contains(state)) {
             await PhantomManager.SpawnPhantoms(refMonster);
         }
     }
@@ -108,26 +111,11 @@ internal static class Patches {
     [HarmonyPrefix]
     [HarmonyPatch(typeof(MonsterBase), nameof(MonsterBase.ChangeStateIfValid), typeof(MonsterBase.States), typeof(MonsterBase.States))]
     private static async void HandleLaserFire(MonsterBase __instance, MonsterBase.States targetState) {
-        if (!__instance.TryGetComponent<Eigong>(out var eigongComp)) return;
+        if (!__instance.TryGetComponent<Eigong>(out var eigongComp) || __instance.name != Constants.BossName) return;
         if (targetState == Constants.GunMonsterState) {
             await eigongComp.FireLaser();
         }
     }
-
-    // [HarmonyPrefix]
-    // [HarmonyPatch(typeof(EffectDealer), "DelayShootEffect")]
-    // private static void ResetAnimatorOnDeath(EffectDealer __instance, EffectReceiver receiver, EffectHitData data) {
-    //     var eigong = receiver.GetComponentInParent<Eigong>();
-    //     if (!eigong) return;
-    //     if (!__instance.GetComponentInParent<Player>()) return;
-    //     if (eigong.TryGetComponent<StealthGameMonster>(out var monster)) {
-    //         if (monster.CurrentState is not (Constants.GunMonsterState or MonsterBase.States.FooStunEnter or MonsterBase.States.BossAngry)) return;
-    //         Log.Debug("Next value: " + (monster.postureSystem.RemainTotal - data.dealer.FinalValue));
-    //         if (monster.postureSystem.RemainTotal - data.dealer.FinalValue <= 0) {
-    //             eigong.HandleDeath();
-    //         }
-    //     }
-    // }
 
 #if DEBUG
     /// <summary>

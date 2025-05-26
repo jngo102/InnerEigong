@@ -22,5 +22,5 @@ internal static class Constants {
     /// <summary>
     /// The gun firing animation name.
     /// </summary>
-    internal const string GunMonsterAnimation = "Prep";
+    internal const string GunMonsterAnimation = "Gun Prepare";
 }

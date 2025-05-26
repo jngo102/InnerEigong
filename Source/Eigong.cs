@@ -179,7 +179,7 @@ internal class Eigong : MonoBehaviour {
             }
         }
 
-        _monster.postureSystem.OnPostureEmpty.AddListener(HandleDeath);
+        _monster.postureSystem.OnPostureEmpty.AddListener(ResetAnimator);
     }
 
     private void StopArmFollow() {
@@ -221,17 +221,6 @@ internal class Eigong : MonoBehaviour {
         await UniTask.Delay(TimeSpan.FromSeconds(5 / 6f), cancellationToken: fireLaserCancelToken);
         ResetAnimator();
         _monster.ChangeStateIfValid(States.Engaging);
-    }
-
-    internal async void HandleDeath() {
-        ResetAnimator();
-        // Log.Debug("Phase: "  + _monster.PhaseIndex);
-        // if (_monster.PhaseIndex >= 2) {
-        //     await UniTask.Delay(TimeSpan.FromSeconds(0.25f));
-        //     Log.Debug("TO DEAD");
-        //     // _monster.GetType().GetMethod("ForceDie", BindingFlags.Instance | BindingFlags.NonPublic)?.Invoke(_monster, []);
-        //     _monster.ChangeStateIfValid(States.Dead);
-        // }
     }
 
     /// <summary>

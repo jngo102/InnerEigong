@@ -20,11 +20,13 @@ internal static class PhantomManager {
     /// <param name="numPhantoms">The number of <see cref="Phantom">phantoms</see> to spawn.</param>
     internal static void Initialize(GameObject refObj, int numPhantoms = 1) {
         _phantoms = new List<Phantom>(numPhantoms);
+        var random = new System.Random((int)Time.timeSinceLevelLoad);
         for (var i = 0; i < numPhantoms; i++) {
             var phantomObj = UObj.Instantiate(refObj, refObj.transform.position, Quaternion.identity);
             phantomObj.SetActive(false);
+            phantomObj.name = "Phantom " + i;
             var phantom = phantomObj.AddComponent<Phantom>();
-            phantom.ScrambleGuid(i);
+            phantom.ScrambleGuid(random);
             phantomObj.SetActive(true);
             _phantoms.Add(phantom);
         }
