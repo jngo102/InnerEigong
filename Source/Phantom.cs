@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using Cysharp.Threading.Tasks;
 using System.Threading;
 using HarmonyLib;
@@ -18,23 +17,34 @@ internal class Phantom : MonoBehaviour {
     /// </summary>
     private MonsterBase _monster;
 
+    private Animator Anim => _monster.animator;
+
     private void Start() {
         AutoAttributeManager.AutoReferenceAllChildren(gameObject);
 
         TryGetComponent(out _monster);
-        _monster.Invoke("CheckInit", 0);
+        _monster.EnterLevelAwake();
         _monster.EnterLevelReset();
+        
+        // Destroy damage receivers so phantom cannot take damage 
         foreach (var decreasePostureReceiver in _monster.damageReceivers) {
             foreach (var effectReceiver in Traverse.Create(decreasePostureReceiver).Field<EffectReceiver[]>("effectReceivers").Value) {
                 Destroy(effectReceiver.gameObject);
             }
         }
+        // foreach (var monsterPushAway in Anim.GetComponentsInChildren<MonsterPushAway>(true)) {
+        //     Destroy(monsterPushAway.gameObject);
+        // }
 
-        foreach (var color in GetComponentsInChildren<_2dxFX_ColorRGB>(true)) {
-            if (color.name.Contains("Shadow")) continue;
-            color.gameObject.AddComponent<_2dxFX_Negative>();
-            Destroy(color);
-        }
+        // Make sprite colors inverted
+        var yiGungView = Anim.transform.Find("View/YiGung");
+        var body = yiGungView.Find("Body");
+        body.gameObject.AddComponent<_2dxFX_Negative>();
+        Destroy(body.GetComponent<_2dxFX_ColorRGB>());
+        var arm = body.Find("Arm");
+        arm.gameObject.AddComponent<_2dxFX_Negative>();
+        var swordSprite = yiGungView.Find("Weapon/Sword/Sword Sprite");
+        swordSprite.gameObject.AddComponent<_2dxFX_Negative>();
 
         _monster.Hide();
     }

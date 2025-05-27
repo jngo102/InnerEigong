@@ -6,6 +6,7 @@ namespace InnerEigong;
 /// <summary>
 /// Sets up the tracking slashes attack.
 /// </summary>
+[RequireComponent(typeof(Animator))]
 [RequireComponent(typeof(PlayerPosFollower))]
 [RequireComponent(typeof(PoolObject))]
 internal class TrackingSlashes : MonoBehaviour {
@@ -13,7 +14,7 @@ internal class TrackingSlashes : MonoBehaviour {
         var follower = gameObject.TryGetCompOrAdd<PlayerPosFollower>();
         follower.followMode = PlayerPosFollower.FollowMode.Instant;
         follower.IsForceFollowPlayer = true;
-        for (var i = 1; i <= 5; i++) {
+        for (var i = 1; i < 5; i++) {
             var slash = transform.Find($"Slash {i}");
             var slashObj = slash.gameObject;
             var damageScalar = slashObj.AddComponent<DamageScalarSource>();

@@ -1,6 +1,7 @@
 ﻿using System.Linq;
 using HarmonyLib;
 using I2.Loc;
+using UnityEngine;
 using States = MonsterBase.States;
 
 namespace InnerEigong;
@@ -38,11 +39,12 @@ internal static class Patches {
     /// Add <see cref="Eigong">custom behavior</see> to the Eigong boss.
     /// </summary>  
     [HarmonyPrefix]
-    [HarmonyPatch(typeof(StealthGameMonster), "Awake")]
-    private static void ModifyEigong(StealthGameMonster __instance) {
-        if (__instance.gameObject.name != Constants.BossName) return;
-        __instance.gameObject.AddComponent<Eigong>();
-        PhantomManager.Initialize(__instance.gameObject, ConfigManager.NumberOfPhantoms);
+    [HarmonyPatch(typeof(GameLevel), nameof(GameLevel.Awake))]
+    private static void ModifyEigong(GameLevel __instance) {
+        if (__instance.SceneName != Constants.BossSceneName) return;
+        var eigongObj = GameObject.Find(Constants.BossName);
+        eigongObj.AddComponent<Eigong>(); 
+        PhantomManager.Initialize(eigongObj, ConfigManager.NumberOfPhantoms);
         // __instance.AddComp(typeof(FireTrail));
     }
 
@@ -53,14 +55,15 @@ internal static class Patches {
         States.Attack6,
         States.Attack12,
         States.Attack13,
-        States.Attack18
+        States.Attack18,
+        States.Trolling
     ];
+
     /// <summary>
     /// Spawn a <see cref="Phantom">phantom</see> on certain attacks.
     /// </summary>
     [HarmonyPostfix]
-    [HarmonyPatch(typeof(MonsterBase), nameof(MonsterBase.ChangeStateIfValid), typeof(MonsterBase.States),
-        typeof(MonsterBase.States))]
+    [HarmonyPatch(typeof(MonsterBase), nameof(MonsterBase.ChangeStateIfValid), typeof(States), typeof(States))]
     private static async void CheckSpawnPhantom(MonsterBase __instance) {
         if (__instance.name != Constants.BossName) return;
         var rand = new System.Random((int)UnityEngine.Time.timeSinceLevelLoad);
@@ -84,7 +87,7 @@ internal static class Patches {
 
     /// <summary>
     /// Updates the <see cref="LocalizationManager.GetTranslation">translation</see> for Eigong's name.
-    /// </summary>
+    /// </summary>  
     /// <param name="Term">The localization key term.</param>
     /// <param name="__result">The output string.</param>
     [HarmonyPostfix]
@@ -107,11 +110,11 @@ internal static class Patches {
             _ => __result
         };
     }
-    
+
     [HarmonyPrefix]
-    [HarmonyPatch(typeof(MonsterBase), nameof(MonsterBase.ChangeStateIfValid), typeof(MonsterBase.States), typeof(MonsterBase.States))]
-    private static async void HandleLaserFire(MonsterBase __instance, MonsterBase.States targetState) {
-        if (!__instance.TryGetComponent<Eigong>(out var eigongComp) || __instance.name != Constants.BossName) return;
+    [HarmonyPatch(typeof(MonsterBase), nameof(MonsterBase.ChangeStateIfValid), typeof(States), typeof(States))]
+    private static async void HandleLaserFire(MonsterBase __instance, States targetState) {
+        if (!__instance.TryGetComponent<Eigong>(out var eigongComp)) return;
         if (targetState == Constants.GunMonsterState) {
             await eigongComp.FireLaser();
         }
@@ -124,7 +127,7 @@ internal static class Patches {
     [HarmonyPostfix]
     [HarmonyPatch(typeof(PlayerHealth), "Awake")]
     private static void HealEveryInjury(PlayerHealth __instance) {
-        // __instance.OnTakeDamageEvent.AddListener(__instance.GainFull);
+        __instance.OnTakeDamageEvent.AddListener(__instance.GainFull);
     }
 
     /// <summary>
@@ -133,6 +136,7 @@ internal static class Patches {
     [HarmonyPostfix]
     [HarmonyPatch(typeof(Health), nameof(Health.RemoveInvincible))]
     private static void ForceInvincible(Health __instance) {
+        if (!ConfigManager.Invincible) return;
         var player = __instance.transform.root.GetComponentInChildren<Player>();
         if (player) __instance.BecomeInvincible(player);
     }

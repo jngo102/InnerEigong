@@ -1,13 +1,9 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using HarmonyLib;
 using UnityEngine;
-using Object = UnityEngine.Object;
 using States = MonsterBase.States;
 
 namespace InnerEigong;
@@ -20,16 +16,21 @@ internal class Eigong : MonoBehaviour {
     private StealthGameMonster _monster = null!;
     private AnimatorOverrideController _originalController = null!;
     private RuntimeAnimatorController _newController = null!;
+    private float[] _laserFireEventTimes;
+    
+    private Animator Anim => _monster.animator;
 
     private void Awake() {
         TryGetComponent(out _monster);
         _monster.OverrideWanderingIdleTime(0);
 #if DEBUG
-        _monster.StartingPhaseIndex = 2;
+        _monster.StartingPhaseIndex = ConfigManager.StartingPhase - 1;
 #endif
 
-        _originalController = _monster.animator.runtimeAnimatorController as AnimatorOverrideController;
+        _originalController = Anim.runtimeAnimatorController as AnimatorOverrideController;
         AssetManager.TryGet("Inner Eigong Controller", out _newController);
+        var laserClip = _newController?.animationClips.FirstOrDefault(clip => clip.name == Constants.GunMonsterAnimation);
+        _laserFireEventTimes = laserClip.events.Select(animEvent => animEvent.time).ToArray();
 
         PreSetupGunAttack();
 
@@ -40,20 +41,46 @@ internal class Eigong : MonoBehaviour {
         await UniTask.WaitUntil(() => _monster.fsm != null);
 
         PostSetupGunAttack();
+
+        SetupTrackingSlashes();
+
+        Anim.gameObject.AddComponent<AnimatorFixer>();
     }
 
-    private void CreateTrackingSlashes() {
-        AssetManager.Inst<GameObject>("Tracking Slashes", null);
+    private void OnDestroy() {
+        _monster.fsm.Changed -= CheckCreateTrackingSlashes;
+        var postureEmptyEvent = _monster.postureSystem.OnPostureEmpty;
+        postureEmptyEvent.RemoveListener(ResetAnimator);
+        postureEmptyEvent.RemoveListener(PhantomManager.FadeOutAllPhantoms);
+    }
+
+    private DamageDealer[] _damageDealers;
+
+    private void SetupTrackingSlashes() {
+        var thrustDelayView = Anim.transform.Find("View/YiGung/Attack Effect/ThurstDelay").gameObject;
+        Destroy(thrustDelayView);
+        _damageDealers = _monster.monsterCore.logicRoot.GetComponentsInChildren<DamageDealer>(true);
+        _monster.fsm.Changed += CheckCreateTrackingSlashes;
+    }
+
+    private void CheckCreateTrackingSlashes(States state) {
+        if (state is States.Attack3) {
+            foreach (var damageDealer in _damageDealers) {
+                damageDealer.enabled = false;
+            }
+            AssetManager.Inst<GameObject>("Tracking Slashes", null);
+        } else {
+            foreach (var damageDealer in _damageDealers) {
+                damageDealer.enabled = true;
+            }
+        }
     }
 
     private OldPivotRotate _armRotate = null!;
-    private LaserAttackController _laserAttack = null!;
-
-    private Animator _originalAnimator = null!;
+        private LaserAttackController _laserAttack = null!;
 
     private void PreSetupGunAttack() {
-        _originalAnimator = _monster.animator;
-        var body = _originalAnimator.transform.Find("View/YiGung/Body");
+        var body = Anim.transform.Find("View/YiGung/Body");
         var arm = AssetManager.Inst<GameObject>("Arm", body);
         arm.name = arm.name.Replace("(Clone)", "");
         arm.transform.localPosition = new Vector2(20, -23);
@@ -70,6 +97,7 @@ internal class Eigong : MonoBehaviour {
         _armRotate.maxRotate = 75;
         _armRotate.offset = 0;
         _armRotate.referenceActor = _monster;
+
         if (PreloadManager.TryGet("Sniper", out var sniperRef)) {
             var bow = sniperRef.transform.Find("Dragon_Sniper/DragonSniper/RotateRArm/RArm/Bow");
             var sniperCoreRef = bow.transform.Find("SniperLaserCore").gameObject;
@@ -111,7 +139,6 @@ internal class Eigong : MonoBehaviour {
             var laserDetector = _laserAttack.GetComponentInChildren<TriggerDetector>(true);
             laserDetector.Invoke("Awake", 0);
             sniperCore.SetActive(true);
-            var laserEffector = _laserAttack.GetComponentInChildren<EffectDealer>();
             var laserView = sniperCore.GetComponentInChildren<LaserViewController>(true);
             laserView.gameObject.SetActive(true);
             arm.SetActive(false);
@@ -121,8 +148,8 @@ internal class Eigong : MonoBehaviour {
             gunStateObj.transform.SetParent(attackStates);
             var gunBossState = gunStateObj.AddComponent<BossGeneralState>();
             gunBossState.BindingAnimation = Constants.GunMonsterAnimation;
+            gunBossState.BindingAnimation = Constants.GunMonsterAnimation;
             gunBossState.state = Constants.GunMonsterState;
-            // gunBossState.AutoFlipAround = true;
             gunBossState.ToCloseTransitionState = States.Attack5;
             AssetManager.TryGet(Constants.GunMonsterAnimation, out gunBossState.clip);
             gunBossState.EnterLevelReset();
@@ -141,10 +168,7 @@ internal class Eigong : MonoBehaviour {
         States.Attack1,
         States.Attack5,
         States.Attack7,
-        States.Attack10,
         States.Attack13,
-        States.Attack14,
-        States.Attack16,
         States.Attack18
     ];
 
@@ -154,14 +178,9 @@ internal class Eigong : MonoBehaviour {
         var linkNextMoveWeightObj = new GameObject("weight");
         linkNextMoveWeightObj.transform.SetParent(gunStateParent);
         var linkNextMoveWeightComp = linkNextMoveWeightObj.AddComponent<LinkNextMoveStateWeight>();
-#if DEBUG
-        var gunWeight = 100;
-#else
-        var gunWeight = 1;
-#endif
         var gunStateWeight = new AttackWeight {
             state = gunBossState,
-            weight = gunWeight
+            weight = 1
         };
         var engagingState = _monster.GetComponentInChildren<StealthEngaging>(true);
         var engagingStateWeight = new AttackWeight {
@@ -170,8 +189,6 @@ internal class Eigong : MonoBehaviour {
         };
         linkNextMoveWeightComp.stateWeightList = [engagingStateWeight];
 
-        _monster.animator.gameObject.AddComponent<GunAnimatorFixer>();
-
         foreach (var state in _gunPrevStates) {
             var bossState = _monster.FindState(state);
             foreach (var linkNextMoveWeight in bossState.GetComponentsInChildren<LinkNextMoveStateWeight>(true)) {
@@ -179,7 +196,9 @@ internal class Eigong : MonoBehaviour {
             }
         }
 
-        _monster.postureSystem.OnPostureEmpty.AddListener(ResetAnimator);
+        var postureEmptyEvent = _monster.postureSystem.OnPostureEmpty;
+        postureEmptyEvent.AddListener(ResetAnimator);
+        postureEmptyEvent.AddListener(PhantomManager.FadeOutAllPhantoms);
     }
 
     private void StopArmFollow() {
@@ -196,29 +215,35 @@ internal class Eigong : MonoBehaviour {
     /// Fire the laser.
     /// </summary>
     internal async UniTask FireLaser() {
-        var head = _originalAnimator.transform.Find("View/YiGung/Head");
+        _monster.Velocity = Vector2.zero;
+        var head = Anim.transform.Find("View/YiGung/Head");
         head.Find("Hair").localPosition = Vector3.zero;
         head.gameObject.SetActive(true);
         _fireLaserCancelTokenSrc?.Cancel();
+        _fireLaserCancelTokenSrc?.Dispose();
         _fireLaserCancelTokenSrc = new CancellationTokenSource();
         var fireLaserCancelToken = _fireLaserCancelTokenSrc.Token;
-        _originalAnimator.runtimeAnimatorController = _newController;
+        Anim.runtimeAnimatorController = _newController;
         _monster.FacePlayer();
         RestartArmFollow();
-        await UniTask.Delay(TimeSpan.FromSeconds(1.5f), cancellationToken: fireLaserCancelToken);
+        await UniTask.Delay(TimeSpan.FromSeconds(_laserFireEventTimes[0]), cancellationToken: fireLaserCancelToken);
         // Laser 1
+        var dt = _laserFireEventTimes[1] - _laserFireEventTimes[0];
         StopArmFollow();
         _monster.FacePlayer();
-        await UniTask.Delay(TimeSpan.FromSeconds(0.5f), cancellationToken: fireLaserCancelToken);
+        var halfDt = dt / 2;
+        await UniTask.Delay(TimeSpan.FromSeconds(halfDt), cancellationToken: fireLaserCancelToken);
         RestartArmFollow();
-        await UniTask.Delay(TimeSpan.FromSeconds(0.5f + 1 / 3f), cancellationToken: fireLaserCancelToken);
+        await UniTask.Delay(TimeSpan.FromSeconds(halfDt), cancellationToken: fireLaserCancelToken);
         // Laser 2
+        dt = _laserFireEventTimes[2] - _laserFireEventTimes[1];
         StopArmFollow();
         _monster.FacePlayer();
-        await UniTask.Delay(TimeSpan.FromSeconds(1 / 3f), cancellationToken: fireLaserCancelToken);
+        await UniTask.Delay(TimeSpan.FromSeconds(dt), cancellationToken: fireLaserCancelToken);
         // Laser 3
+        dt = _laserFireEventTimes[3] - _laserFireEventTimes[2];
         _monster.FacePlayer();
-        await UniTask.Delay(TimeSpan.FromSeconds(5 / 6f), cancellationToken: fireLaserCancelToken);
+        await UniTask.Delay(TimeSpan.FromSeconds(dt), cancellationToken: fireLaserCancelToken);
         ResetAnimator();
         _monster.ChangeStateIfValid(States.Engaging);
     }
@@ -229,10 +254,7 @@ internal class Eigong : MonoBehaviour {
     private void ResetAnimator() {
         _fireLaserCancelTokenSrc?.Cancel();
         _fireLaserCancelTokenSrc = null;
-        // _gunAnimator.StopPlayback();
-        // _gunAnimator.enabled = false;
-        // _originalAnimator.enabled = true;
-        _originalAnimator.runtimeAnimatorController = _originalController;
+        Anim.runtimeAnimatorController = _originalController;
         _armRotate.gameObject.SetActive(false);
     }
 
@@ -247,7 +269,7 @@ internal class Eigong : MonoBehaviour {
         _monster.EnterLevelReset();
 #if DEBUG
         var statTraverse = Traverse.Create(_monster.monsterStat);
-        statTraverse.Field<float>("BaseHealthValue").Value = 500;
+        statTraverse.Field<float>("BaseHealthValue").Value = ConfigManager.BossHealth;
 #endif
     }
 }

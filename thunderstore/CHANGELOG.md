@@ -1,5 +1,16 @@
 # Inner Eigong Change Log
 
+## [0.6.5] - 2025-05-26
+
+### Changed
+
+- Allow phantoms to fire laser guns
+
+### Fixed
+
+- Fixed soft lock when transitioning from talisman to gun
+- Remove phantoms on phase change
+
 ## [0.6.4] - 2025-05-26
 
 ### Fixed

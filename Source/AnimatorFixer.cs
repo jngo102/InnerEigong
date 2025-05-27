@@ -7,7 +7,7 @@ namespace InnerEigong;
 /// Fixes broken behavior when switching to and from a custom runtime animator controller.
 /// </summary>
 [RequireComponent(typeof(Animator))]
-internal class GunAnimatorFixer : MonoBehaviour {
+internal class AnimatorFixer : MonoBehaviour {
     private MonsterBase _monster = null!;
     private GameObject _phase2Activator = null!;
     private GameObject[] _activatorChildren = null!;

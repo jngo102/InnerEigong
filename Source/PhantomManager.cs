@@ -65,8 +65,17 @@ internal static class PhantomManager {
             await UniTask.Delay(TimeSpan.FromSeconds(spawnInterval), cancellationToken: spawnCancelSrc.Token);
         }
 
-
         await UniTask.WhenAll(spawnTasks);
+    }
+
+    /// <summary>
+    /// Force fade out every existing phantom.
+    /// </summary>
+    internal static void FadeOutAllPhantoms() {
+        for (var i = 0; i < _phantoms.Count; i++) {
+            var tokenSrc = _spawnCancelSrcs[i];
+            _phantoms[i].FadeOut(tokenSrc.Token).Forget();
+        }
     }
 
     /// <summary>
